@@ -8,24 +8,28 @@ const client = new Client({
     hostname: "localhost", 
     database: "cologne_datahub", 
     user: "postgres", 
-    password: "Usuario1+" 
+    password: "Usuario1+"
 });
 
 await client.connect();
-console.log("Conectado a PostgreSQL. Iniciando importación...");
+console.log("Connected to PostgreSQL. Initializing import...");
+
+const parseNum = (val: string) => (val === "" || val === undefined || val === null) ? null : Number(val);
 
 for (const feature of geojson.features) {
     const p = feature.properties;
     const [lon, lat] = feature.geometry.coordinates;
 
+    const treeNumber = p.Baumnummer || feature.id?.toString(); 
+
     let neighborhoodId = null;
-    if (p.stadtteil) {
+    if (p.Stadtteil) {
         const res = await client.queryObject<{id: number}>(`
             INSERT INTO neighborhoods (name) 
             VALUES ($1) 
             ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name 
             RETURNING id
-        `, [p.stadtteil]);
+        `, [p.Stadtteil]);
         neighborhoodId = res.rows[0].id;
     }
 
@@ -38,18 +42,18 @@ for (const feature of geojson.features) {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
         ON CONFLICT (tree_number) DO NOTHING
     `, [
-        p.baumnummer, 
-        p.botanischer_name, 
-        p.pflanzjahr, 
-        p.stammumfang,
-        p.baumhoehe, 
-        p.strasse, 
+        treeNumber, 
+        p.Botanischer_Name?.trim(), 
+        parseNum(p.Pflanzjahr), 
+        parseNum(p['Stammumfang_-_cm']),
+        parseNum(p['Höhe_-_m']), 
+        p.Straße, 
         neighborhoodId,
         lat, 
         lon, 
-        p.naturdenkmal === 'ja'
+        p.Naturdenkmal === 'ja'
     ]);
 }
 
-console.log("Importación finalizada.");
+console.log("Finished.");
 await client.end();
