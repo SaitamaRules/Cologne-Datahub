@@ -2,18 +2,18 @@
 SELECT COUNT(*) FROM trees;
 
 -- 16. What are the top 10 most frequent botanical names?
-SELECT botanical_name, COUNT(*) as count 
+SELECT botanical_name, COUNT(*) as total 
 FROM trees 
 GROUP BY botanical_name 
-ORDER BY count DESC 
+ORDER BY total DESC 
 LIMIT 10;
 
 -- 17. Which neighborhood has the most trees?
-SELECT n.name, COUNT(t.id) as tree_count 
+SELECT n.name, COUNT(t.id) as total
 FROM trees t 
 JOIN neighborhoods n ON t.neighborhood_id = n.id 
 GROUP BY n.name 
-ORDER BY tree_count DESC 
+ORDER BY total DESC 
 LIMIT 1;
 
 -- 18. How many trees were planted after the year 2000?
@@ -22,7 +22,7 @@ FROM trees
 WHERE planting_year > 2000;
 
 -- 19. Which trees are listed as natural monuments? (Sample of 10 to avoid overwflow)
-SELECT tree_number, botanical_name, street 
+SELECT tree_number, botanical_name, street
 FROM trees 
 WHERE natural_monument = TRUE
 LIMIT 10;
@@ -34,17 +34,18 @@ SELECT n.name,
 FROM trees t 
 JOIN neighborhoods n ON t.neighborhood_id = n.id 
 GROUP BY n.name
-ORDER BY n.name ASC;
+ORDER BY n.name;
 
--- 21. Which trees are located on 'Aachener Strasse'?
--- Using ILIKE and % to account for "Strasse" vs "Straße" variations in raw data
-SELECT tree_number, botanical_name, street 
+-- 21. Which trees are located on 'Aachener Strasse'? (Sample of 10 to avoid overwflow)
+SELECT *
 FROM trees 
-WHERE street ILIKE 'Aachener Str%';
+WHERE street ILIKE 'Aachener Str%'
+LIMIT 10;
 
 -- 22. Which location type (first letter of the tree number) appears most frequently?
-SELECT SUBSTRING(tree_number, 1, 1) as location_type, COUNT(*) as count 
-FROM trees 
+SELECT LEFT(tree_number, 1) AS location_type, COUNT(*) AS total
+FROM trees
+WHERE tree_number IS NOT NULL
 GROUP BY location_type 
-ORDER BY count DESC 
+ORDER BY total DESC 
 LIMIT 1;
