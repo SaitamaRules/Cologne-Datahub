@@ -45,6 +45,26 @@ The neighborhood could be extracted into a separate table to normalize the datab
 For this initial stage, they are stored as two separate NUMERIC(10,7) columns (lat and lon) .  
 The optimal, long-term solution for geospatial data in PostgreSQL is using the PostGIS extension.
 
+### 1.7 Bonus Task: Indexing and PostGIS
+
+#### Performance Comparison (EXPLAIN ANALYZE)  
+To evaluate the performance improvement of indexing, a query searching for a specific botanical name (Acer platanoides) was executed before and after creating a B-Tree index.  
+
+**Before Indexing (Sequential Scan):**  
+* **Execution Time:** ~5.5 ms  
+* **Observation:** PostgreSQL performs a sequential scan.  
+
+**After Indexing (Index Scan):**  
+* **Execution Time:** ~1.5 ms  
+* **Observation:** PostgreSQL uses an index scan, drastically reducing the execution time as it searches directly within the optimized B-Tree structure instead of scanning the entire table.  
+
+#### PostGIS Extension Research
+**What is the PostGIS extension for PostgreSQL and what does it bring to geodata?**  
+
+* **Definition:** PostGIS is a spatial database extender for the PostgreSQL object-relational database. It adds support for geographic objects, allowing location-aware queries to be run natively in SQL.  
+**Native Spatial Data Types:** Replaces basic `NUMERIC` `lat`/`lon` columns with native `Geometry` or `Geography` types (Points, Lines, Polygons).  
+**Spatial Indexing:** Introduces GiST (Generalized Search Tree) indexes, which are specifically optimized for multi-dimensional spatial queries (e.g., finding all items within a specific map view).  
+
 ## Troubleshooting & Blocks
 
 **1. Connection refused on WFS fetch**  
