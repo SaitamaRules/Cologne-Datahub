@@ -1,0 +1,11 @@
+{
+"tasks": {
+"dev": "deno run --allow-net --allow-env --watch src/main.ts"
+},
+"imports": {
+"hono": "https://deno.land/x/hono@v4.5.4/mod.ts",
+"hono/middleware": "https://deno.land/x/hono@v4.5.4/middleware.ts",
+"postgres": "https://deno.land/x/postgres@v0.19.3/mod.ts",
+"@std/dotenv": "jsr:@std/dotenv@^0.225.0"
+}
+}
