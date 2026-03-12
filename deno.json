@@ -6,6 +6,7 @@
     "hono": "npm:hono@4.5.4",
     "hono/": "npm:/hono@4.5.4/",
     "postgres": "https://deno.land/x/postgres@v0.19.3/mod.ts",
-    "@std/dotenv": "jsr:@std/dotenv@^0.225.0"
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.0",
+    "mongo": "https://deno.land/x/mongo@v0.33.0/mod.ts"
   }
 }
