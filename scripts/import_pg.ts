@@ -3,11 +3,12 @@ import { Client } from "postgres";
 const raw = await Deno.readTextFile("data/baumkataster_full.json");
 const geojson = JSON.parse(raw);
 
-const client = new Client({ 
-    hostname: "localhost", 
-    database: "cologne_datahub", 
-    user: "postgres", 
-    password: "Usuario1+"
+const client = new Client({
+    hostname: Deno.env.get('DB_HOST') ?? 'localhost',
+    database: Deno.env.get('DB_NAME') ?? 'cologne_datahub',
+    user: Deno.env.get('DB_USER') ?? 'postgres',
+    password: Deno.env.get('DB_PASSWORD'),
+    port: Number(Deno.env.get('DB_PORT') ?? 5432),
 });
 
 await client.connect();
