@@ -1,5 +1,4 @@
-// src/import_pg.ts
-import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import { Client } from "postgres";
 
 const raw = await Deno.readTextFile("baumkataster_full.json");
 const geojson = JSON.parse(raw);
