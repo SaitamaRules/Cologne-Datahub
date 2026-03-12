@@ -21,8 +21,8 @@ It limits the maximum number of records returned in a single request.
 
 ### 1.3 Deno and data obtained
 
-**11. Which fields are suitable as a primary key?**  
-It contains the standard structure type (geometry and properties).
+**11. What fields does a single feature contain?**  
+A single feature consists of a `type` string (set to "Feature"), a `geometry` object containing the coordinates, and a `properties` object that holds all the tree attributes like `baumnummer`, `botanischer_name`, and `strasse`.
 
 **12. Where are the coordinates and in what format (lon/lat or lat/lon)?**  
 The coordinates are inside the geometry.coordinates array. The standard GeoJSON format uses Longitude first, then Latitude (lon/lat).
@@ -33,7 +33,7 @@ Measurements like kronendurchmesser (crown diameter), stammumfang (trunk circumf
 **14. What is the difference between properties and geometry in GeoJSON?**  
 Geometry tells us where the tree is, and how is that information stored. Properties tells us about the tree, what is, measurements, etc...
 
-### 1.3 Deno and data obtained
+### 1.4 Database Schema Design
 
 **1. Which fields are suitable as a primary key?**  
 A key like an auto-incrementing id (SERIAL) is the standard for relational mapping. The tree ID serves as a natural key and must have a UNIQUE constraint to prevent duplicates.
