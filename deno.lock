@@ -5,7 +5,8 @@
     "jsr:@std/crypto@~0.220.1": "0.220.1",
     "jsr:@std/dotenv@0.225": "0.225.6",
     "jsr:@std/encoding@~0.220.1": "0.220.1",
-    "npm:hono@4.5.4": "4.5.4"
+    "npm:hono@4.5.4": "4.5.4",
+    "npm:proj4@*": "2.20.4"
   },
   "jsr": {
     "@lucsoft/web-bson@0.3.1": {
@@ -24,6 +25,19 @@
   "npm": {
     "hono@4.5.4": {
       "integrity": "sha512-k2IguJfRgNCpDbAfpxk+o+fZBLFHl4+eIZUpjc1ItZWHeZ37SmT3efA1UpkIaC0hSf1NJg0E79/wWn6g9LQ4Cw=="
+    },
+    "mgrs@1.0.0": {
+      "integrity": "sha512-awNbTOqCxK1DBGjalK3xqWIstBZgN6fxsMSiXLs9/spqWkF2pAhb2rrYCFSsr1/tT7PhcDGjZndG8SWYn0byYA=="
+    },
+    "proj4@2.20.4": {
+      "integrity": "sha512-/EEBoXjBw+zW1Lofinw0YFQ4OFOqC6XThnwRAgjEHw8WBN+wSy/6aeqRRdjy4b2igy3X0k3RNDuwcYqcQq7nDw==",
+      "dependencies": [
+        "mgrs",
+        "wkt-parser"
+      ]
+    },
+    "wkt-parser@1.5.4": {
+      "integrity": "sha512-heRp3QBynj8SAGepAkE8h2k4KhUGRqzgwlSRgqNhxjmSIeSvE5ZrV8n1uy5jk+iJO2jmfffIwjdAaTirBOOx0A=="
     }
   },
   "remote": {
