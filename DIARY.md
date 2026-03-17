@@ -93,3 +93,11 @@ MongoDB is preferable when handling datasets with highly nested or variable stru
 **1. Connection refused on WFS fetch**  
 The Deno fetch request to the Cologne Geoportal WFS failed with a **Connection refused** error. The network firewall (University) was blocking direct outbound HTTPS traffic to external services.  
 Bypassed by temporarily switching the host machine to an external mobile hotspot and downloading both the small dataset (500 records) and the full dataset (~60MB).
+
+**2. MongoDB BSON Memory Overflow on Import**  
+When attempting to import the full ~58MB dataset into MongoDB using a single `insertMany()` call, the Deno script crashed with a `RangeError: offset is out of bounds`. The underlying BSON serializer ran out of memory buffer trying to process the massive array.  
+Bypassed by modifying the import script to process the data in smaller batches, slicing the main array and inserting exactly 500 documents per iteration.  
+
+**3. MongoDB 2dsphere Index "Out of bounds" Error**  
+Creating the spatial index (`2dsphere`) failed because the longitude/latitude values were extremely large (e.g., ~352668, ~5652168). The WFS server provided the data in a local German cartographic projection (EPSG:25832, measured in meters), but MongoDB strictly requires the global GPS standard (WGS84/EPSG:4326, measured in degrees from -180 to 180).  
+Bypassed by importing the `proj4` npm library into the Deno script to mathematically transform the coordinates from EPSG:25832 to EPSG:4326 in memory right before inserting them into the database.
