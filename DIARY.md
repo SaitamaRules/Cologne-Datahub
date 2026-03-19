@@ -88,6 +88,23 @@ It is a specialized spatial index designed to support queries that calculate geo
 **30. When is MongoDB a better choice than PostgreSQL?**  
 MongoDB is preferable when handling datasets with highly nested or variable structures (like native GeoJSON), when rapid prototyping requires flexibility without strict schema design, and when the application primarily reads and writes self-contained documents rather than relying heavily on complex relational joins.
 
+# PostgreSQL vs. MongoDB – Comparison Table
+
+This table compares both database systems based on the experience gained during Week 1 (PostgreSQL) and Week 3 (MongoDB) of the project.
+
+| Criteria               | PostgreSQL (Week 1)                                                                                                                     | MongoDB (Week 3)                                                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Data structure**     | Tables, rows, columns                                                                                                                   | Collections, documents, fields                                                                                                      |
+| **Schema**             | Fixed, defined before inserting any data (`CREATE TABLE`)                                                                               | Flexible, no schema required upfront. Documents in the same collection can have different fields                                    |
+| **GeoJSON import**     | Requires flattening: coordinates go into separate `NUMERIC` columns (`lat`, `lon`), and all properties are mapped to individual columns | Stored directly as-is. The entire GeoJSON `Feature` object (with nested `geometry` and `properties`) is a single document           |
+| **Geo queries**        | Requires the PostGIS extension to be installed and configured. Without it, you're stuck doing manual math with raw coordinates          | Built-in support with `$near`, `$geoWithin`, etc. Just needs a `2dsphere` index on the geometry field                               |
+| **Query language**     | SQL — standardized, widely known, very powerful for joins and complex filtering                                                         | MQL (MongoDB Query Language) — JSON-based syntax, more intuitive for nested documents but less familiar at first                    |
+| **Normalization**      | Natural fit. We moved `stadtteil` into its own `barrios` table with a foreign key relationship                                          | Not really needed. The neighborhood is just a string inside `properties`, and that's fine for this use case                         |
+| **Data integrity**     | Strong. `NOT NULL`, `UNIQUE`, `REFERENCES`, and type constraints catch errors at insert time                                            | Weak by default. Nothing stops you from inserting a document with a typo in a field name or a wrong data type                       |
+| **Learning curve**     | Steeper initial setup (schema design, SQL syntax, pgAdmin), but SQL knowledge transfers everywhere                                      | Faster to get started (just throw JSON in), but the aggregation pipeline (`$group`, `$match`, `$sort`) takes some getting used to   |
+| **Tooling used**       | pgAdmin 4, `psql` CLI                                                                                                                   | MongoDB Compass, `mongosh` CLI                                                                                                      |
+| **Best suited for...** | Projects that need strict data integrity, complex relationships between entities, and standardized reporting                            | Projects with flexible/changing data structures, document-oriented storage, and native geospatial features without extra extensions |
+
 ## Troubleshooting & Blocks
 
 **1. Connection refused on WFS fetch**  
@@ -96,7 +113,7 @@ Bypassed by temporarily switching the host machine to an external mobile hotspot
 
 **2. MongoDB BSON Memory Overflow on Import**  
 When attempting to import the full ~58MB dataset into MongoDB using a single `insertMany()` call, the Deno script crashed with a `RangeError: offset is out of bounds`. The underlying BSON serializer ran out of memory buffer trying to process the massive array.  
-Bypassed by modifying the import script to process the data in smaller batches, slicing the main array and inserting exactly 500 documents per iteration.  
+Bypassed by modifying the import script to process the data in smaller batches, slicing the main array and inserting exactly 500 documents per iteration.
 
 **3. MongoDB 2dsphere Index "Out of bounds" Error**  
 Creating the spatial index (`2dsphere`) failed because the longitude/latitude values were extremely large (e.g., ~352668, ~5652168). The WFS server provided the data in a local German cartographic projection (EPSG:25832, measured in meters), but MongoDB strictly requires the global GPS standard (WGS84/EPSG:4326, measured in degrees from -180 to 180).  
