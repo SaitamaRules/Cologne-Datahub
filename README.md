@@ -1,27 +1,107 @@
 # Cologne DataHub
 
-This project was developed during my Erasmus+ mobility in Cologne (ASIR Higher Degree). The goal is to process real spatial data from the city and serve it through a modern REST API.
+This project was developed during my Erasmus+ mobility in Cologne (ASIR Higher Degree). The goal is to work with real spatial data from the city's tree registry and build a backend around it.
 
-## Description and Data Source
+## Description
 
-The system consumes, stores, and serves data from the public tree registry of Cologne. The original data comes from a municipal WFS (Web Feature Service) that provides the info in GeoJSON format.
+The city of Cologne has a public tree registry (Baumkataster) available as a WFS service. It has data on every publicly managed tree: species, size, planting year, neighborhood, street, coordinates... about 58 MB of GeoJSON in total.
 
-* **WFS Source:** [Cologne Tree Registry (GeoJSON)](https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wfs/guest?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms:baumkataster&outputFormat=application/json;%20subtype=geojson)
+The project is split into weekly stages:
+
+- **Week 1** — Fetched the GeoJSON from the WFS, designed a relational schema, imported everything into PostgreSQL and wrote SQL queries.
+- **Week 2** — Built a REST API with Deno and Hono to expose the PostgreSQL data. Full CRUD + stats endpoints, tested with Postman.
+- **Week 3** — Imported the same data into MongoDB without any transformation, ran geospatial queries, and wrote a comparison between both databases.
+
+**WFS Source:** [Cologne Tree Registry (GeoJSON)](https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wfs/guest?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms:baumkataster&outputFormat=application/json;%20subtype=geojson)
 
 ## Requirements
 
-To run this project you need:
-* **Deno 2.x** (Main runtime)
-* **PostgreSQL 15+** (Relational database)
-* **Git** (Version control)
+- Deno 2.x
+- PostgreSQL 15+
+- MongoDB 7.x
+- Git
 
-## Setup and Installation
+## Setup
 
-1. **Clone the repo and setup the database:**
-   Create a database named `cologne_datahub` in your PostgreSQL server and run the `sql/schema.sql` file to create the tables.
+Clone the repo:
 
-2. **Load the data (Optional):**
-   If you don't have the data yet, run the scripts in the `scripts/` folder in this order:
-   ```bash
-   deno run --allow-net --allow-write scripts/fetch_data.ts
-   deno run --allow-read --allow-net --allow-env scripts/import_pg.ts
+```bash
+git clone https://github.com/SaitamaRules/Cologne-Datahub.git
+cd Cologne-Datahub
+```
+
+Create a `.env` file in the root:
+
+```
+DB_HOST=localhost
+DB_NAME=cologne_datahub
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_PORT=5432
+```
+
+### PostgreSQL
+
+Create the database, run the schema and import:
+
+```bash
+createdb cologne_datahub
+psql -d cologne_datahub -f queries/schema.sql
+deno run --allow-net --allow-write scripts/fetch_data.ts
+deno run --allow-read --allow-net --allow-env scripts/import_pg.ts
+```
+
+### MongoDB
+
+Make sure `mongod` is running, then:
+
+```bash
+deno run --allow-read --allow-net scripts/import_mongo.ts
+```
+
+After importing, create the geo index:
+
+```js
+use cologne_datahub
+db.arboles.createIndex({ geometry: "2dsphere" })
+```
+
+### Run the API
+
+```bash
+deno task dev
+```
+
+Starts on `http://localhost:8000`.
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/arboles` | All trees (`?page=1&limit=20`) |
+| GET | `/api/arboles/:id` | Single tree by ID |
+| GET | `/api/arboles?barrio=Nippes` | Filter by neighborhood |
+| POST | `/api/arboles` | Create a tree |
+| PUT | `/api/arboles/:id` | Update a tree |
+| DELETE | `/api/arboles/:id` | Delete a tree |
+| GET | `/api/estadisticas/barrios` | Tree count per neighborhood |
+| GET | `/api/estadisticas/especies` | Top 10 species |
+
+## Project Structure
+
+```
+Cologne-Datahub/
+├── scripts/           # fetch_data.ts, import_pg.ts, import_mongo.ts
+├── queries/           # schema.sql, queries_pg.sql, queries_mongo.js
+├── src/               # API source code (main.ts, db.ts, routes/)
+├── tests/             # Postman collection
+├── data/              # Local data files (gitignored)
+├── DIARY.md           # Progress journal
+└── deno.json          # Deno config
+```
+
+## Issues I ran into
+
+- The university firewall blocked the WFS connection. Had to use a mobile hotspot.
+- Importing 58 MB into MongoDB with a single `insertMany()` crashed. Fixed it by batching in groups of 500.
+- The WFS coordinates are in EPSG:25832 (meters), not WGS84 (degrees). MongoDB needs WGS84 for the `2dsphere` index, so I used `proj4` to convert them before inserting.
