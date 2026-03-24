@@ -76,16 +76,16 @@ Starts on `http://localhost:8000`.
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/arboles` | All trees (`?page=1&limit=20`) |
-| GET | `/api/arboles/:id` | Single tree by ID |
-| GET | `/api/arboles?barrio=Nippes` | Filter by neighborhood |
-| POST | `/api/arboles` | Create a tree |
-| PUT | `/api/arboles/:id` | Update a tree |
-| DELETE | `/api/arboles/:id` | Delete a tree |
-| GET | `/api/estadisticas/barrios` | Tree count per neighborhood |
-| GET | `/api/estadisticas/especies` | Top 10 species |
+| Method | Endpoint                     | Description                    |
+| ------ | ---------------------------- | ------------------------------ |
+| GET    | `/api/arboles`               | All trees (`?page=1&limit=20`) |
+| GET    | `/api/arboles/:id`           | Single tree by ID              |
+| GET    | `/api/arboles?barrio=Nippes` | Filter by neighborhood         |
+| POST   | `/api/arboles`               | Create a tree                  |
+| PUT    | `/api/arboles/:id`           | Update a tree                  |
+| DELETE | `/api/arboles/:id`           | Delete a tree                  |
+| GET    | `/api/estadisticas/barrios`  | Tree count per neighborhood    |
+| GET    | `/api/estadisticas/especies` | Top 10 species                 |
 
 ## Project Structure
 
@@ -105,3 +105,17 @@ Cologne-Datahub/
 - The university firewall blocked the WFS connection. Had to use a mobile hotspot.
 - Importing 58 MB into MongoDB with a single `insertMany()` crashed. Fixed it by batching in groups of 500.
 - The WFS coordinates are in EPSG:25832 (meters), not WGS84 (degrees). MongoDB needs WGS84 for the `2dsphere` index, so I used `proj4` to convert them before inserting.
+
+---
+
+## 🇪🇸 Apéndice Académico: Proyecto Final ASIR
+
+_Nota: Esta sección está redactada en español, ya que documenta el uso de este repositorio para mi evaluación académica en España._
+
+Este código base, desarrollado originalmente durante mi movilidad Erasmus+ en Colonia, sirve como núcleo para mi **Trabajo de Fin de Ciclo (TFC)** del Grado Superior en Administración de Sistemas Informáticos en Red (ASIR).
+
+El objetivo del proyecto final no es solo el código, sino el diseño, despliegue y securización de toda la infraestructura que lo soporta (implementando un firewall OPNsense, DMZ/LAN segmentadas, orquestación con Docker, Proxy Inverso con Nginx y monitorización nativa en Python).
+
+Puedes consultar la planificación completa, los objetivos y la arquitectura de sistemas en el siguiente enlace:
+
+📄 **[Ver Anteproyecto de Infraestructura (Notion)](https://www.notion.so/Cologne-Datahub-32dd13355df8804db043f28942998cc6?source=copy_link)**
