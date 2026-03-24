@@ -118,4 +118,4 @@ El objetivo del proyecto final no es solo el código, sino el diseño, despliegu
 
 Puedes consultar la planificación completa, los objetivos y la arquitectura de sistemas en el siguiente enlace:
 
-📄 **[Ver Anteproyecto de Infraestructura (Notion)](https://www.notion.so/Cologne-Datahub-32dd13355df8804db043f28942998cc6?source=copy_link)**
+📄 **[Ver Anteproyecto de Infraestructura (Notion)](https://cologne-datahub.notion.site/Cologne-Datahub-32dd13355df8804db043f28942998cc6?pvs=141)**
