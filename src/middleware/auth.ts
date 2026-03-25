@@ -1,9 +1,9 @@
 import { createMiddleware } from "hono/factory";
 
 export const apiKeyAuth = createMiddleware(async (c, next) => {
-    const key = c.req.header('x-api-key');
-    if (!key || key !== Deno.env.get('API_KEY')) {
-        return c.json({ error: 'No autorizado' }, 401);
-    }
-    await next();
+  const key = c.req.header("x-api-key");
+  if (!key || key !== Deno.env.get("API_KEY")) {
+    return c.json({ error: "Not autorized" }, 401);
+  }
+  await next();
 });

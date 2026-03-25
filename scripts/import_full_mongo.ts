@@ -7,7 +7,7 @@ proj4.defs(
 );
 
 console.log("Reading full GeoJSON file...");
-const raw = await Deno.readTextFile("data/baumkataster.json");
+const raw = await Deno.readTextFile("data/baumkataster_full.json");
 const geojson = JSON.parse(raw);
 
 console.log("Converting cartographic coordinates to GPS (WGS84)...");

@@ -9,6 +9,5 @@
     "@std/dotenv": "jsr:@std/dotenv@^0.225.0",
     "mongo": "https://deno.land/x/mongo@v0.33.0/mod.ts",
     "proj4": "npm:proj4@^2.15.0"
-
   }
 }

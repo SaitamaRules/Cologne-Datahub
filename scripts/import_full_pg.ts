@@ -1,6 +1,6 @@
 import { Client } from "postgres";
 
-const raw = await Deno.readTextFile("data/baumkataster.json");
+const raw = await Deno.readTextFile("data/baumkataster_full.json");
 const geojson = JSON.parse(raw);
 
 const client = new Client({
