@@ -11,6 +11,7 @@ The project is split into weekly stages:
 - **Week 1** — Fetched the GeoJSON from the WFS, designed a relational schema, imported everything into PostgreSQL and wrote SQL queries.
 - **Week 2** — Built a REST API with Deno and Hono to expose the PostgreSQL data. Full CRUD + stats endpoints, tested with Postman.
 - **Week 3** — Imported the same data into MongoDB without any transformation, ran geospatial queries, and wrote a comparison between both databases.
+- **Week 4** — Added MongoDB endpoints to the API (including a geo query), protected write operations with API key authentication, and wrote OpenAPI documentation.
 
 **WFS Source:** [Cologne Tree Registry (GeoJSON)](https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wfs/guest?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms:baumkataster&outputFormat=application/json;%20subtype=geojson)
 
@@ -38,6 +39,7 @@ DB_NAME=cologne_datahub
 DB_USER=postgres
 DB_PASSWORD=your_password
 DB_PORT=5432
+API_KEY=your_secret_key
 ```
 
 ### PostgreSQL
@@ -76,24 +78,58 @@ Starts on `http://localhost:8000`.
 
 ## API Endpoints
 
-| Method | Endpoint                     | Description                    |
-| ------ | ---------------------------- | ------------------------------ |
-| GET    | `/api/arboles`               | All trees (`?page=1&limit=20`) |
-| GET    | `/api/arboles/:id`           | Single tree by ID              |
-| GET    | `/api/arboles?barrio=Nippes` | Filter by neighborhood         |
-| POST   | `/api/arboles`               | Create a tree                  |
-| PUT    | `/api/arboles/:id`           | Update a tree                  |
-| DELETE | `/api/arboles/:id`           | Delete a tree                  |
-| GET    | `/api/estadisticas/barrios`  | Tree count per neighborhood    |
-| GET    | `/api/estadisticas/especies` | Top 10 species                 |
+### PostgreSQL
+
+| Method | Endpoint                        | Description                                            |
+| ------ | ------------------------------- | ------------------------------------------------------ |
+| GET    | `/api/trees`                    | All trees (`?page=1&limit=20`, `?neighborhood=Nippes`) |
+| GET    | `/api/trees/:id`                | Single tree by ID                                      |
+| POST   | `/api/trees`                    | Create a tree                                          |
+| PUT    | `/api/trees/:id`                | Update a tree                                          |
+| DELETE | `/api/trees/:id`                | Delete a tree                                          |
+| GET    | `/api/statistics/neighborhoods` | Tree count per neighborhood                            |
+| GET    | `/api/statistics/species`       | Top 10 species                                         |
+
+### MongoDB
+
+| Method | Endpoint                              | Description                                  |
+| ------ | ------------------------------------- | -------------------------------------------- |
+| GET    | `/api/mongo/trees`                    | All trees (`?page=1&limit=20`)               |
+| GET    | `/api/mongo/trees/:id`                | Single tree by MongoDB `_id`                 |
+| GET    | `/api/mongo/trees/nearby`             | Geo query (`?lat=50.94&lon=6.95&radius=500`) |
+| GET    | `/api/mongo/statistics/neighborhoods` | Tree count per neighborhood                  |
+| POST   | `/api/mongo/trees`                    | Create a tree (GeoJSON Feature)              |
+
+### Authentication
+
+Write operations (POST, PUT, DELETE) require an API key. Send it as a header:
+
+```
+x-api-key: your_secret_key
+```
+
+GET endpoints are public.
+
+### API Documentation
+
+With the server running, open `http://localhost:8000/docs` for the interactive Swagger UI.
 
 ## Project Structure
 
 ```
 Cologne-Datahub/
+├── docs/              # openapi.json, swagger.html
 ├── scripts/           # fetch_data.ts, import_pg.ts, import_mongo.ts
 ├── queries/           # schema.sql, queries_pg.sql, queries_mongo.js
-├── src/               # API source code (main.ts, db.ts, routes/)
+├── src/
+│   ├── main.ts        # Entry point
+│   ├── db.ts          # PostgreSQL connection
+│   ├── mongo_db.ts    # MongoDB connection
+│   ├── middleware/
+│   │   └── auth.ts    # API key middleware
+│   └── routes/
+│       ├── arboles.ts         # PostgreSQL routes
+│       └── arboles_mongo.ts   # MongoDB routes
 ├── tests/             # Postman collection
 ├── data/              # Local data files (gitignored)
 ├── DIARY.md           # Progress journal
