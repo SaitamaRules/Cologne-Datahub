@@ -1,0 +1,574 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Cologne DataHub API",
+    "description": "REST API for the Cologne Tree Registry (Baumkataster). Serves data from PostgreSQL and MongoDB backends. Built with Deno and Hono.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local dev server"
+    }
+  ],
+  "tags": [
+    { "name": "PostgreSQL", "description": "Endpoints backed by PostgreSQL (relational)" },
+    { "name": "MongoDB", "description": "Endpoints backed by MongoDB (document/GeoJSON)" }
+  ],
+  "paths": {
+    "/api/trees": {
+      "get": {
+        "tags": ["PostgreSQL"],
+        "summary": "Get all trees (paginated)",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          },
+          {
+            "name": "neighborhood",
+            "in": "query",
+            "description": "Filter by neighborhood name (case-insensitive)",
+            "schema": { "type": "string" },
+            "example": "Nippes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated tree list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/TreePg" } },
+                    "page": { "type": "integer" },
+                    "limit": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "post": {
+        "tags": ["PostgreSQL"],
+        "summary": "Create a new tree",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TreePgInput" },
+              "example": {
+                "tree_number": "S00999",
+                "botanical_name": "Tilia cordata",
+                "planting_year": 2021,
+                "street": "Aachener Str.",
+                "natural_monument": false,
+                "lat": 50.9350,
+                "lon": 6.9400
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tree created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/TreePg" }
+                  }
+                }
+              }
+            }
+          },
+          "422": { "description": "Missing required field (tree_number)" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/trees/{id}": {
+      "get": {
+        "tags": ["PostgreSQL"],
+        "summary": "Get tree by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tree found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/TreePg" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["PostgreSQL"],
+        "summary": "Update a tree",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TreePgInput" },
+              "example": {
+                "botanical_name": "Quercus robur",
+                "height_m": 18.5
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tree updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/TreePg" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["PostgreSQL"],
+        "summary": "Delete a tree",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tree deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/statistics/neighborhoods": {
+      "get": {
+        "tags": ["PostgreSQL"],
+        "summary": "Tree count per neighborhood",
+        "responses": {
+          "200": {
+            "description": "Neighborhood statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "neighborhood": { "type": "string" },
+                          "tree_count": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/statistics/species": {
+      "get": {
+        "tags": ["PostgreSQL"],
+        "summary": "Top 10 most common species",
+        "responses": {
+          "200": {
+            "description": "Species ranking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "species": { "type": "string" },
+                          "count": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mongo/trees": {
+      "get": {
+        "tags": ["MongoDB"],
+        "summary": "Get all trees (paginated)",
+        "description": "Returns GeoJSON Feature documents directly from MongoDB.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of GeoJSON Feature documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/TreeMongo" } },
+                    "page": { "type": "integer" },
+                    "limit": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["MongoDB"],
+        "summary": "Create a new tree (GeoJSON Feature)",
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TreeMongo" },
+              "example": {
+                "type": "Feature",
+                "geometry": {
+                  "type": "Point",
+                  "coordinates": [6.9578, 50.9413]
+                },
+                "properties": {
+                  "botanischer_name": "Tilia cordata",
+                  "pflanzjahr": 2020,
+                  "stadtteil": "Altstadt-Nord",
+                  "strasse": "Domkloster"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "id": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "description": "Body is not a valid GeoJSON Feature" }
+        }
+      }
+    },
+    "/api/mongo/trees/{id}": {
+      "get": {
+        "tags": ["MongoDB"],
+        "summary": "Get tree by MongoDB _id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "MongoDB ObjectId",
+            "schema": { "type": "string" },
+            "example": "665a1f2e3b4c5d6e7f8a9b0c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/TreeMongo" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid ObjectId format" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/mongo/trees/nearby": {
+      "get": {
+        "tags": ["MongoDB"],
+        "summary": "Find trees near a coordinate",
+        "description": "Uses MongoDB $near with a 2dsphere index. Returns all trees within the given radius.",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "description": "Latitude (WGS84)",
+            "schema": { "type": "number" },
+            "example": 50.9413
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "description": "Longitude (WGS84)",
+            "schema": { "type": "number" },
+            "example": 6.9578
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "description": "Search radius in meters",
+            "schema": { "type": "integer", "default": 500 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nearby trees",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/TreeMongo" } },
+                    "radius_meters": { "type": "integer" },
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing or invalid lat/lon parameters" }
+        }
+      }
+    },
+    "/api/mongo/statistics/neighborhoods": {
+      "get": {
+        "tags": ["MongoDB"],
+        "summary": "Tree count per neighborhood (aggregation)",
+        "responses": {
+          "200": {
+            "description": "Aggregated neighborhood stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string", "description": "Neighborhood name" },
+                          "count": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TreePg": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "tree_number": { "type": "string" },
+          "botanical_name": { "type": "string" },
+          "planting_year": { "type": "integer" },
+          "trunk_circumference_cm": { "type": "number" },
+          "height_m": { "type": "number" },
+          "street": { "type": "string" },
+          "neighborhood_id": { "type": "integer" },
+          "natural_monument": { "type": "boolean" },
+          "lat": { "type": "number" },
+          "lon": { "type": "number" }
+        }
+      },
+      "TreePgInput": {
+        "type": "object",
+        "required": ["tree_number"],
+        "properties": {
+          "tree_number": { "type": "string" },
+          "botanical_name": { "type": "string" },
+          "planting_year": { "type": "integer" },
+          "trunk_circumference_cm": { "type": "number" },
+          "height_m": { "type": "number" },
+          "street": { "type": "string" },
+          "neighborhood_id": { "type": "integer" },
+          "natural_monument": { "type": "boolean" },
+          "lat": { "type": "number" },
+          "lon": { "type": "number" }
+        }
+      },
+      "TreeMongo": {
+        "type": "object",
+        "description": "A GeoJSON Feature document as stored in MongoDB",
+        "properties": {
+          "_id": { "type": "string" },
+          "type": { "type": "string", "enum": ["Feature"] },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["Point"] },
+              "coordinates": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "[longitude, latitude]"
+              }
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "botanischer_name": { "type": "string" },
+              "pflanzjahr": { "type": "integer" },
+              "stammumfang": { "type": "number" },
+              "baumhoehe": { "type": "number" },
+              "stadtteil": { "type": "string" },
+              "strasse": { "type": "string" },
+              "naturdenkmal": { "type": "string" }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid API key",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Required for write operations (POST, PUT, DELETE). Set API_KEY in .env"
+      }
+    }
+  }
+}
