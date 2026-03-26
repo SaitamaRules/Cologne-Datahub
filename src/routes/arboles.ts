@@ -141,7 +141,7 @@ apiRouter.put("/trees/:id", async (c) => {
         values.push(body[key as keyof typeof body]);
       }
     }
-    values.push(id); // Añadimos el ID como último parámetro para el WHERE
+    values.push(id);
     const setString = setFields.join(", ");
 
     const result = await client.queryObject(
@@ -182,7 +182,6 @@ apiRouter.delete("/trees/:id", async (c) => {
 apiRouter.get("/statistics/neighborhoods", async (c) => {
   const client = await pool.connect();
   try {
-    // Se añade ::int para evitar el error de serialización de BigInt
     const result = await client.queryObject(
       `SELECT n.name as neighborhood, COUNT(t.id)::int as tree_count 
              FROM trees t JOIN neighborhoods n ON t.neighborhood_id = n.id 
