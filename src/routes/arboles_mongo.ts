@@ -19,13 +19,12 @@ mongoRouter.get("/trees", async (c) => {
   }
 });
 
-// 43. GET /api/mongo/trees/nearby - Geo query ($near)
-// IMPORTANT: This static route MUST be defined before the dynamic :id route,
-// otherwise Hono matches "nearby" as an :id parameter.
+// 43. GET /api/mongo/trees/nearby - Geo query ($geoNear)
 mongoRouter.get("/trees/nearby", async (c) => {
   const lat = Number(c.req.query("lat"));
   const lon = Number(c.req.query("lon"));
   const radius = Number(c.req.query("radius") ?? 500);
+  const limit = Number(c.req.query("limit") ?? 50);
 
   if (isNaN(lat) || isNaN(lon)) {
     return c.json(
@@ -36,19 +35,29 @@ mongoRouter.get("/trees/nearby", async (c) => {
 
   try {
     const nearby = await arbolesMongo
-      .find({
-        geometry: {
-          $near: {
-            $geometry: { type: "Point", coordinates: [lon, lat] },
-            $maxDistance: radius,
+      .aggregate([
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: [lon, lat] },
+            distanceField: "distance_m",
+            maxDistance: radius,
+            spherical: true,
           },
         },
-      })
+        { $limit: limit },
+      ])
       .toArray();
 
-    return c.json({ data: nearby, radius_meters: radius, total: nearby.length });
+    return c.json({
+      data: nearby,
+      radius_meters: radius,
+      total: nearby.length,
+    });
   } catch {
-    return c.json({ error: "Geo query failed. Is the 2dsphere index created?" }, 500);
+    return c.json(
+      { error: "Geo query failed. Is the 2dsphere index created?" },
+      500,
+    );
   }
 });
 
