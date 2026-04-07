@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { pool } from "../db.ts";
+import { apiKeyAuth } from "../middleware/auth.ts";
 
 export const apiRouter = new Hono();
 
@@ -77,7 +78,7 @@ apiRouter.get("/trees/:id", async (c) => {
 });
 
 // 4. POST /trees - Create record
-apiRouter.post("/trees", async (c) => {
+apiRouter.post("/trees", apiKeyAuth, async (c) => {
   const body = await c.req.json<collectNewTree>();
 
   if (!body.tree_number) {
@@ -116,7 +117,7 @@ apiRouter.post("/trees", async (c) => {
 });
 
 // 5. PUT /trees/:id - Update record dynamically
-apiRouter.put("/trees/:id", async (c) => {
+apiRouter.put("/trees/:id", apiKeyAuth, async (c) => {
   const id = Number(c.req.param("id"));
   const body = await c.req.json<Tree>();
 
@@ -159,7 +160,7 @@ apiRouter.put("/trees/:id", async (c) => {
 });
 
 // 6. DELETE /trees/:id - Delete record
-apiRouter.delete("/trees/:id", async (c) => {
+apiRouter.delete("/trees/:id", apiKeyAuth, async (c) => {
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ error: "Invalid ID" }, 400);
 
