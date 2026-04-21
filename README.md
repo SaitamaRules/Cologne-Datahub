@@ -1,5 +1,8 @@
 # Cologne DataHub
 
+[![CI](https://github.com/SaitamaRules/Cologne-Datahub/actions/workflows/ci.yml/badge.svg)](https://github.com/SaitamaRules/Cologne-Datahub/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 This project was developed during my Erasmus+ mobility in Cologne (ASIR Higher Degree). The goal is to work with real spatial data from the city's tree registry and build a backend around it.
 
 ## Description
