@@ -1,247 +1,386 @@
 {
   "info": {
     "_postman_id": "c18d840b-2bc9-4e92-9758-9088f1d23b3e",
-    "name": "Cologne-Datahub (English)",
+    "name": "Cologne-Datahub (Full)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "All Trees",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/trees?page=1&limit=10",
-          "host": ["{{base}}"],
-          "path": ["api", "trees"],
-          "query": [
-            {
-              "key": "page",
-              "value": "1"
+      "name": "PostgreSQL",
+      "item": [
+        {
+          "name": "All Trees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/trees?page=1&limit=10",
+              "host": ["{{base}}"],
+              "path": ["api", "trees"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All Trees (Fail: Invalid Limit)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/trees?page=1&limit=kaffe",
+              "host": ["{{base}}"],
+              "path": ["api", "trees"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "kaffe" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tree by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/trees/1",
+              "host": ["{{base}}"],
+              "path": ["api", "trees", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tree by ID (Fail: Not Found)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/trees/1055856",
+              "host": ["{{base}}"],
+              "path": ["api", "trees", "1055856"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Neighborhood",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/trees?neighborhood=deutz",
+              "host": ["{{base}}"],
+              "path": ["api", "trees"],
+              "query": [
+                { "key": "neighborhood", "value": "deutz" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Tree Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tree_number\": \"523411244\",\n    \"botanical_name\": \"Manzana\",\n    \"planting_year\": 1998,\n    \"trunk_circumference_cm\": 25,\n    \"height_m\": 50,\n    \"street\": \"Severinstrasse\",\n    \"neighborhood_id\": 1,\n    \"natural_monument\": true,\n    \"lat\": 50,\n    \"lon\": 23\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "limit",
-              "value": "10"
+            "url": {
+              "raw": "{{base}}/api/trees",
+              "host": ["{{base}}"],
+              "path": ["api", "trees"]
             }
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "All Trees (Fail: Invalid Limit)",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/trees?page=1&limit=kaffe",
-          "host": ["{{base}}"],
-          "path": ["api", "trees"],
-          "query": [
-            {
-              "key": "page",
-              "value": "1"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Tree Record (Fail: Missing tree_number)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"street\": \"Severinstrasse\"}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "limit",
-              "value": "kaffe"
+            "url": {
+              "raw": "{{base}}/api/trees",
+              "host": ["{{base}}"],
+              "path": ["api", "trees"]
             }
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Tree by ID",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/trees/1",
-          "host": ["{{base}}"],
-          "path": ["api", "trees", "1"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Tree by ID (Fail: Not Found)",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/trees/1055856",
-          "host": ["{{base}}"],
-          "path": ["api", "trees", "1055856"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Filter by Neighborhood",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/trees?neighborhood=deutz",
-          "host": ["{{base}}"],
-          "path": ["api", "trees"],
-          "query": [
-            {
-              "key": "neighborhood",
-              "value": "deutz"
-            }
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Create Tree Record",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"tree_number\": \"523411244\",\n    \"botanical_name\": \"Manzana\",\n    \"planting_year\": 1998,\n    \"trunk_circumference_cm\": 25,\n    \"height_m\": 50,\n    \"street\": \"Severinstrasse\",\n    \"neighborhood_id\": 1,\n    \"natural_monument\": true,\n    \"lat\": 50,\n    \"lon\": 23\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{base}}/api/trees",
-          "host": ["{{base}}"],
-          "path": ["api", "trees"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Create Tree Record (Fail: Missing tree_number)",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\"street\": \"Severinstrasse\"}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Create Tree Record (Fail: No API Key)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tree_number\": \"523411245\",\n    \"botanical_name\": \"Tilia cordata\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base}}/api/trees",
+              "host": ["{{base}}"],
+              "path": ["api", "trees"]
             }
-          }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{base}}/api/trees",
-          "host": ["{{base}}"],
-          "path": ["api", "trees"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Update Tree Record",
-      "request": {
-        "method": "PUT",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"trunk_circumference_cm\": 25\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Update Tree Record",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"trunk_circumference_cm\": 25\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base}}/api/trees/1",
+              "host": ["{{base}}"],
+              "path": ["api", "trees", "1"]
             }
-          }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{base}}/api/trees/1",
-          "host": ["{{base}}"],
-          "path": ["api", "trees", "1"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Update Tree Record (Fail: Empty Body)",
-      "request": {
-        "method": "PUT",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Update Tree Record (Fail: Empty Body)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base}}/api/trees/1",
+              "host": ["{{base}}"],
+              "path": ["api", "trees", "1"]
             }
-          }
+          },
+          "response": []
         },
-        "url": {
-          "raw": "{{base}}/api/trees/1",
-          "host": ["{{base}}"],
-          "path": ["api", "trees", "1"]
+        {
+          "name": "Delete Tree Record",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base}}/api/trees/105585",
+              "host": ["{{base}}"],
+              "path": ["api", "trees", "105585"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Tree Record (Fail: Not Found)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base}}/api/trees/105583",
+              "host": ["{{base}}"],
+              "path": ["api", "trees", "105583"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: Trees per Neighborhood",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/statistics/neighborhoods",
+              "host": ["{{base}}"],
+              "path": ["api", "statistics", "neighborhoods"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: Trees per Species",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/statistics/species",
+              "host": ["{{base}}"],
+              "path": ["api", "statistics", "species"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Delete Tree Record",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/trees/105585",
-          "host": ["{{base}}"],
-          "path": ["api", "trees", "105585"]
+      "name": "MongoDB",
+      "item": [
+        {
+          "name": "All Trees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/mongo/trees?page=1&limit=10",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "trees"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tree by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/mongo/trees/655aa8f1c8d7a2b3e4f59876",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "trees", "655aa8f1c8d7a2b3e4f59876"]
+            },
+            "description": "Reemplaza el ObjectId por uno real de tu colección (db.arboles.findOne())."
+          },
+          "response": []
+        },
+        {
+          "name": "Trees Nearby (Cologne Cathedral)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/mongo/trees/nearby?lat=50.9413&lon=6.9578&radius=500",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "trees", "nearby"],
+              "query": [
+                { "key": "lat", "value": "50.9413" },
+                { "key": "lon", "value": "6.9578" },
+                { "key": "radius", "value": "500" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trees Nearby (Fail: Missing lat/lon)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/mongo/trees/nearby",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "trees", "nearby"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stats: Trees per Neighborhood",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/mongo/statistics/neighborhoods",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "statistics", "neighborhoods"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Tree (GeoJSON Feature)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"Feature\",\n    \"geometry\": {\n        \"type\": \"Point\",\n        \"coordinates\": [6.9578, 50.9413]\n    },\n    \"properties\": {\n        \"botanischer_name\": \"Tilia cordata\",\n        \"pflanzjahr\": 2024,\n        \"stadtteil\": \"Altstadt-Nord\",\n        \"strasse\": \"Domkloster\"\n    }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base}}/api/mongo/trees",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "trees"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Tree (Fail: No API Key)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"Feature\",\n    \"geometry\": { \"type\": \"Point\", \"coordinates\": [6.9578, 50.9413] },\n    \"properties\": { \"botanischer_name\": \"Quercus robur\" }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base}}/api/mongo/trees",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "trees"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Tree (Fail: Not a Feature)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"foo\": \"bar\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base}}/api/mongo/trees",
+              "host": ["{{base}}"],
+              "path": ["api", "mongo", "trees"]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
-    },
-    {
-      "name": "Delete Tree Record (Fail: Not Found)",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/trees/105583",
-          "host": ["{{base}}"],
-          "path": ["api", "trees", "105583"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Stats: Trees per Neighborhood",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/statistics/neighborhoods",
-          "host": ["{{base}}"],
-          "path": ["api", "statistics", "neighborhoods"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Stats: Trees per Species",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base}}/api/statistics/species",
-          "host": ["{{base}}"],
-          "path": ["api", "statistics", "species"]
-        }
-      },
-      "response": []
+      ]
     }
   ],
   "variable": [
-    {
-      "key": "base",
-      "value": "http://localhost:8000",
-      "type": "default"
-    }
+    { "key": "base", "value": "http://localhost:8000", "type": "default" },
+    { "key": "apiKey", "value": "", "type": "default" }
   ]
 }
