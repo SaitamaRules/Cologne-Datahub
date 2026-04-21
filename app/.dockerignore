@@ -1,0 +1,35 @@
+# Build context = app/. Paths below are relative to app/.
+
+# Git and dev metadata
+.git
+.gitignore
+.gitattributes
+README.md
+
+# Local environment (secrets must never leak into images)
+.env
+.env.*
+!.env.example
+
+# Application data (fetched locally, too large to bake in)
+data/
+
+# Development-only — not needed at runtime
+scripts/
+tests/
+queries/
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Node artefacts (should not exist under Deno, defensive)
+node_modules/
+.npm/
+
+# Docker files themselves have no business inside the image
+Dockerfile
+.dockerignore
