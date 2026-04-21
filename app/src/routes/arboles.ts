@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { pool } from "../db.ts";
 import { apiKeyAuth } from "../middleware/auth.ts";
+import { jsonError } from "../lib/errors.ts";
 
 export const apiRouter = new Hono();
 
@@ -27,7 +28,7 @@ apiRouter.get("/trees", async (c) => {
   const neighborhood = c.req.query("neighborhood");
 
   if (isNaN(page) || isNaN(limit)) {
-    return c.json({ error: "Invalid pagination parameters" }, 400);
+    return jsonError(c, 400, "INVALID_PAGINATION", "Invalid pagination parameters");
   }
 
   const offset = (page - 1) * limit;
@@ -51,7 +52,7 @@ apiRouter.get("/trees", async (c) => {
     return c.json({ data: result.rows, page, limit });
   } catch (error) {
     console.error(error);
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   } finally {
     client.release();
   }
@@ -60,18 +61,19 @@ apiRouter.get("/trees", async (c) => {
 // 2. GET /trees/:id - Get by ID
 apiRouter.get("/trees/:id", async (c) => {
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return c.json({ error: "Invalid ID" }, 400);
+  if (isNaN(id)) return jsonError(c, 400, "INVALID_ID", "Invalid ID");
 
   const client = await pool.connect();
   try {
     const result =
       await client.queryObject`SELECT * FROM trees WHERE id = ${id}`;
-    if (result.rows.length === 0)
-      return c.json({ error: "Tree not found" }, 404);
+    if (result.rows.length === 0) {
+      return jsonError(c, 404, "TREE_NOT_FOUND", "Tree not found");
+    }
     return c.json({ data: result.rows[0] });
   } catch (error) {
     console.error(error);
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   } finally {
     client.release();
   }
@@ -82,7 +84,7 @@ apiRouter.post("/trees", apiKeyAuth, async (c) => {
   const body = await c.req.json<collectNewTree>();
 
   if (!body.tree_number) {
-    return c.json({ error: "The tree_number field is required" }, 422);
+    return jsonError(c, 422, "VALIDATION_ERROR", "The tree_number field is required");
   }
 
   const client = await pool.connect();
@@ -110,7 +112,7 @@ apiRouter.post("/trees", apiKeyAuth, async (c) => {
     return c.json({ message: "Tree created", data: result.rows[0] }, 201);
   } catch (error) {
     console.error(error);
-    return c.json({ error: "Error creating record" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Error creating record");
   } finally {
     client.release();
   }
@@ -121,16 +123,18 @@ apiRouter.put("/trees/:id", apiKeyAuth, async (c) => {
   const id = Number(c.req.param("id"));
   const body = await c.req.json<Tree>();
 
-  if (isNaN(id)) return c.json({ error: "Invalid ID" }, 400);
-  if (Object.keys(body).length === 0)
-    return c.json({ error: "Request body is empty" }, 400);
+  if (isNaN(id)) return jsonError(c, 400, "INVALID_ID", "Invalid ID");
+  if (Object.keys(body).length === 0) {
+    return jsonError(c, 400, "EMPTY_BODY", "Request body is empty");
+  }
 
   const client = await pool.connect();
   try {
     const check =
       await client.queryObject`SELECT id FROM trees WHERE id = ${id}`;
-    if (check.rows.length === 0)
-      return c.json({ error: "Tree not found" }, 404);
+    if (check.rows.length === 0) {
+      return jsonError(c, 404, "TREE_NOT_FOUND", "Tree not found");
+    }
 
     const setFields = [];
     const values = [];
@@ -153,7 +157,7 @@ apiRouter.put("/trees/:id", apiKeyAuth, async (c) => {
     return c.json({ message: "Tree updated", data: result.rows[0] });
   } catch (error) {
     console.error(error);
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   } finally {
     client.release();
   }
@@ -162,18 +166,19 @@ apiRouter.put("/trees/:id", apiKeyAuth, async (c) => {
 // 6. DELETE /trees/:id - Delete record
 apiRouter.delete("/trees/:id", apiKeyAuth, async (c) => {
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return c.json({ error: "Invalid ID" }, 400);
+  if (isNaN(id)) return jsonError(c, 400, "INVALID_ID", "Invalid ID");
 
   const client = await pool.connect();
   try {
     const result =
       await client.queryObject`DELETE FROM trees WHERE id = ${id} RETURNING id`;
-    if (result.rows.length === 0)
-      return c.json({ error: "Tree not found" }, 404);
+    if (result.rows.length === 0) {
+      return jsonError(c, 404, "TREE_NOT_FOUND", "Tree not found");
+    }
     return c.json({ message: "Tree deleted" });
   } catch (error) {
     console.error(error);
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   } finally {
     client.release();
   }
@@ -191,7 +196,7 @@ apiRouter.get("/statistics/neighborhoods", async (c) => {
     return c.json({ data: result.rows });
   } catch (error) {
     console.error(error);
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   } finally {
     client.release();
   }
@@ -209,7 +214,7 @@ apiRouter.get("/statistics/species", async (c) => {
     return c.json({ data: result.rows });
   } catch (error) {
     console.error(error);
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   } finally {
     client.release();
   }

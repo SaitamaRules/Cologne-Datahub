@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { ObjectId } from "mongo";
 import { arbolesMongo } from "../mongo_db.ts";
 import { apiKeyAuth } from "../middleware/auth.ts";
+import { jsonError } from "../lib/errors.ts";
 
 export const mongoRouter = new Hono();
 
@@ -15,7 +16,7 @@ mongoRouter.get("/trees", async (c) => {
     const trees = await arbolesMongo.find({}).skip(skip).limit(limit).toArray();
     return c.json({ data: trees, page, limit });
   } catch {
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   }
 });
 
@@ -27,9 +28,11 @@ mongoRouter.get("/trees/nearby", async (c) => {
   const limit = Number(c.req.query("limit") ?? 50);
 
   if (isNaN(lat) || isNaN(lon)) {
-    return c.json(
-      { error: "The lat and lon parameters are required and must be numbers" },
+    return jsonError(
+      c,
       400,
+      "VALIDATION_ERROR",
+      "The lat and lon parameters are required and must be numbers",
     );
   }
 
@@ -54,9 +57,11 @@ mongoRouter.get("/trees/nearby", async (c) => {
       total: nearby.length,
     });
   } catch {
-    return c.json(
-      { error: "Geo query failed. Is the 2dsphere index created?" },
+    return jsonError(
+      c,
       500,
+      "GEO_QUERY_FAILED",
+      "Geo query failed. Is the 2dsphere index created?",
     );
   }
 });
@@ -66,10 +71,10 @@ mongoRouter.get("/trees/:id", async (c) => {
   const id = c.req.param("id");
   try {
     const tree = await arbolesMongo.findOne({ _id: new ObjectId(id) });
-    if (!tree) return c.json({ error: "Tree not found" }, 404);
+    if (!tree) return jsonError(c, 404, "TREE_NOT_FOUND", "Tree not found");
     return c.json({ data: tree });
   } catch {
-    return c.json({ error: "Invalid ID format" }, 400);
+    return jsonError(c, 400, "INVALID_ID", "Invalid ID format");
   }
 });
 
@@ -85,7 +90,7 @@ mongoRouter.get("/statistics/neighborhoods", async (c) => {
 
     return c.json({ data: stats });
   } catch {
-    return c.json({ error: "Internal database error" }, 500);
+    return jsonError(c, 500, "DATABASE_ERROR", "Internal database error");
   }
 });
 
@@ -95,15 +100,17 @@ mongoRouter.post("/trees", apiKeyAuth, async (c) => {
     const body = await c.req.json();
 
     if (body.type !== "Feature" || !body.geometry || !body.properties) {
-      return c.json(
-        { error: "The body must be a valid GeoJSON Feature object" },
+      return jsonError(
+        c,
         422,
+        "INVALID_FEATURE",
+        "The body must be a valid GeoJSON Feature object",
       );
     }
 
     const insertId = await arbolesMongo.insertOne(body);
     return c.json({ message: "Record created", id: insertId }, 201);
   } catch {
-    return c.json({ error: "Invalid JSON or internal error" }, 400);
+    return jsonError(c, 400, "INVALID_JSON", "Invalid JSON or internal error");
   }
 });
