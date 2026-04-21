@@ -1,6 +1,6 @@
-const WFS_URL =
-  "https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wfs/guest";
-const url = `${WFS_URL}?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms:baumkataster&outputFormat=application/json;%20subtype=geojson`;
+const WFS_URL = "https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wfs/guest";
+const url =
+  `${WFS_URL}?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms:baumkataster&outputFormat=application/json;%20subtype=geojson`;
 
 const response = await fetch(url);
 const geojson = await response.json();

@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-21
+
+### Added
+
+- GitHub Actions CI workflow (`.github/workflows/ci.yml`) with three
+  parallel jobs: lint (fmt/lint/typecheck), integration tests against
+  ephemeral databases, and Docker image build with GitHub Actions cache.
+- `infra/docker-compose.test.yml`: ephemeral Postgres/Mongo stack with
+  `tmpfs` backing for fast, deterministic test runs.
+- Integration test suite under `app/tests/` with 14 cases covering
+  health endpoints, PostgreSQL CRUD, MongoDB listing, geospatial
+  `$geoNear` queries, API key authentication and uniform error
+  responses. Real databases, no mocks, three deterministic seed
+  fixtures.
+- `integrationTest` helper wrapping `Deno.test` with sanitisers
+  disabled for suites with module-level connection pools.
+- `deno.json` extended with `fmt`, `lint`, `check`, `fmt:check` and
+  `test` tasks and explicit formatter/linter configuration.
+- Makefile targets: `fmt`, `fmt-check`, `lint`, `check`, `test`,
+  `test-up`, `test-down`.
+- README badges for CI status and licence.
+
+### Changed
+
+- Existing codebase reformatted with `deno fmt` using the project's
+  pinned configuration (100-char line width, semicolons, double
+  quotes).
+- CI triggers configured for `main` and `tfc/**` branches, with
+  `workflow_dispatch` for manual runs and an explicit `concurrency`
+  group to cancel superseded in-flight runs.
+
+### Fixed
+
+- Test harness now binds to `127.0.0.1` explicitly to avoid IPv6
+  resolution issues on Ubuntu runners.
+
 ## [0.5.0] - 2026-04-21
 
 ### Added

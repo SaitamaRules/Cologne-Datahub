@@ -1,9 +1,10 @@
-.PHONY: help dev test build up down restart logs ps fetch-data seed-pg seed-mongo seed backup restore clean
+.PHONY: help dev test test-up test-down build up down restart logs ps fetch-data seed-pg seed-mongo seed backup restore clean fmt fmt-check lint check
 
 .DEFAULT_GOAL := help
 
-APP_DIR     := app
-COMPOSE     := docker compose -f infra/docker-compose.yml --env-file .env
+APP_DIR      := app
+COMPOSE      := docker compose -f infra/docker-compose.yml --env-file .env
+COMPOSE_TEST := docker compose -f infra/docker-compose.test.yml
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -11,8 +12,29 @@ help:  ## Show this help
 dev:  ## Run the app in watch mode (Deno, native, requires .env in /app)
 	cd $(APP_DIR) && deno task dev
 
-test:  ## Run tests (Deno) from /app
-	cd $(APP_DIR) && deno test --allow-net --allow-env --allow-read
+fmt:  ## Format all sources
+	cd $(APP_DIR) && deno task fmt
+
+fmt-check:  ## Verify formatting (used in CI)
+	cd $(APP_DIR) && deno task fmt:check
+
+lint:  ## Lint all sources
+	cd $(APP_DIR) && deno task lint
+
+check:  ## Typecheck entry point
+	cd $(APP_DIR) && deno task check
+
+test-up:  ## Start ephemeral test databases
+	$(COMPOSE_TEST) up -d --wait
+
+test-down:  ## Stop ephemeral test databases
+	$(COMPOSE_TEST) down -v
+
+test: test-up  ## Full test cycle: start ephemeral DBs, run suite, tear down
+	cd $(APP_DIR) && deno task test; \
+	code=$$?; \
+	$(MAKE) test-down; \
+	exit $$code
 
 build:  ## Build the app image
 	$(COMPOSE) build

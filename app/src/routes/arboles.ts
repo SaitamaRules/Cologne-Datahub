@@ -65,8 +65,7 @@ apiRouter.get("/trees/:id", async (c) => {
 
   const client = await pool.connect();
   try {
-    const result =
-      await client.queryObject`SELECT * FROM trees WHERE id = ${id}`;
+    const result = await client.queryObject`SELECT * FROM trees WHERE id = ${id}`;
     if (result.rows.length === 0) {
       return jsonError(c, 404, "TREE_NOT_FOUND", "Tree not found");
     }
@@ -130,8 +129,7 @@ apiRouter.put("/trees/:id", apiKeyAuth, async (c) => {
 
   const client = await pool.connect();
   try {
-    const check =
-      await client.queryObject`SELECT id FROM trees WHERE id = ${id}`;
+    const check = await client.queryObject`SELECT id FROM trees WHERE id = ${id}`;
     if (check.rows.length === 0) {
       return jsonError(c, 404, "TREE_NOT_FOUND", "Tree not found");
     }
@@ -170,8 +168,7 @@ apiRouter.delete("/trees/:id", apiKeyAuth, async (c) => {
 
   const client = await pool.connect();
   try {
-    const result =
-      await client.queryObject`DELETE FROM trees WHERE id = ${id} RETURNING id`;
+    const result = await client.queryObject`DELETE FROM trees WHERE id = ${id} RETURNING id`;
     if (result.rows.length === 0) {
       return jsonError(c, 404, "TREE_NOT_FOUND", "Tree not found");
     }
