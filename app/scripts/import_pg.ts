@@ -15,7 +15,9 @@ const client = new Client({
 });
 
 await client.connect();
-console.log(`Connected to PostgreSQL at ${env.DB_HOST}:${env.DB_PORT}. Importing ${geojson.features.length} features...`);
+console.log(
+  `Connected to PostgreSQL at ${env.DB_HOST}:${env.DB_PORT}. Importing ${geojson.features.length} features...`,
+);
 
 const parseNum = (val: string) =>
   val === "" || val === undefined || val === null ? null : Number(val);
