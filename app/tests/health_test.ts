@@ -34,7 +34,9 @@ integrationTest("response carries X-Request-ID header", async () => {
     await res.body?.cancel();
     const header = res.headers.get("X-Request-ID");
     // UUID v4 format: 8-4-4-4-12 hex chars
-    if (!header || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(header)) {
+    if (
+      !header || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(header)
+    ) {
       throw new Error(`Invalid or missing X-Request-ID header: ${header}`);
     }
   } finally {

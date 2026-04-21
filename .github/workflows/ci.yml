@@ -58,6 +58,20 @@ jobs:
       - name: Start ephemeral test databases
         run: docker compose -f infra/docker-compose.test.yml up -d --wait
 
+      - name: Wait for databases to accept connections
+        run: |
+          for i in {1..30}; do
+            if nc -z localhost 5433 && nc -z localhost 27018; then
+              echo "Both databases ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Timeout waiting for databases"
+          docker compose -f infra/docker-compose.test.yml ps
+          docker compose -f infra/docker-compose.test.yml logs
+          exit 1
+
       - name: Run integration tests
         working-directory: ./app
         run: deno test --allow-net --allow-env --allow-read

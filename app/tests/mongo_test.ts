@@ -13,29 +13,32 @@ integrationTest("GET /api/mongo/trees lists seeded documents", async () => {
   }
 });
 
-integrationTest("GET /api/mongo/trees/nearby returns trees within radius of Cologne Cathedral", async () => {
-  const ctx = await setup();
-  try {
-    // Oak tree (S00002) is at Domkloster, right next to the cathedral
-    const res = await fetch(
-      `${ctx.baseUrl}/api/mongo/trees/nearby?lat=50.9413&lon=6.9578&radius=100`,
-    );
-    assertEquals(res.status, 200);
-    const body = await res.json();
-    // At least the Domkloster oak should be within 100m
-    if (body.data.length < 1) {
-      throw new Error("Expected at least 1 tree near the cathedral");
-    }
-    // Distances must be sorted ascending (that's what $geoNear guarantees)
-    for (let i = 1; i < body.data.length; i++) {
-      if (body.data[i].distance_m < body.data[i - 1].distance_m) {
-        throw new Error("Results not sorted by distance");
+integrationTest(
+  "GET /api/mongo/trees/nearby returns trees within radius of Cologne Cathedral",
+  async () => {
+    const ctx = await setup();
+    try {
+      // Oak tree (S00002) is at Domkloster, right next to the cathedral
+      const res = await fetch(
+        `${ctx.baseUrl}/api/mongo/trees/nearby?lat=50.9413&lon=6.9578&radius=100`,
+      );
+      assertEquals(res.status, 200);
+      const body = await res.json();
+      // At least the Domkloster oak should be within 100m
+      if (body.data.length < 1) {
+        throw new Error("Expected at least 1 tree near the cathedral");
       }
+      // Distances must be sorted ascending (that's what $geoNear guarantees)
+      for (let i = 1; i < body.data.length; i++) {
+        if (body.data[i].distance_m < body.data[i - 1].distance_m) {
+          throw new Error("Results not sorted by distance");
+        }
+      }
+    } finally {
+      await ctx.stop();
     }
-  } finally {
-    await ctx.stop();
-  }
-});
+  },
+);
 
 integrationTest("GET /api/mongo/trees/nearby without lat/lon returns 400", async () => {
   const ctx = await setup();
