@@ -15,12 +15,12 @@ import { Client as PgClient } from "postgres";
 // --- Test environment wiring -------------------------------------------------
 // Must be set before importing anything from the app, because env.ts
 // validates required vars at module load time.
-Deno.env.set("DB_HOST", "localhost");
+Deno.env.set("DB_HOST", "127.0.0.1");
 Deno.env.set("DB_PORT", "5433");
 Deno.env.set("DB_NAME", "cologne_datahub_test");
 Deno.env.set("DB_USER", "test");
 Deno.env.set("DB_PASSWORD", "test");
-Deno.env.set("MONGO_URI", "mongodb://localhost:27018");
+Deno.env.set("MONGO_URI", "mongodb://127.0.0.1:27018");
 Deno.env.set("API_KEY", "test-api-key");
 Deno.env.set("PORT", "0"); // ignored — we pass our own below
 
@@ -59,15 +59,15 @@ export const SEED_TREES = [
     street: "Severinstr.",
     neighborhood: "Altstadt-Süd",
     natural_monument: false,
-    lat: 50.9300,
-    lon: 6.9600,
+    lat: 50.93,
+    lon: 6.96,
   },
 ] as const;
 
 // --- Seeders -----------------------------------------------------------------
 async function resetPostgres() {
   const client = new PgClient({
-    hostname: "localhost",
+    hostname: "127.0.0.1",
     port: 5433,
     database: "cologne_datahub_test",
     user: "test",
@@ -75,7 +75,9 @@ async function resetPostgres() {
   });
   await client.connect();
   try {
-    await client.queryObject("TRUNCATE trees, neighborhoods RESTART IDENTITY CASCADE");
+    await client.queryObject(
+      "TRUNCATE trees, neighborhoods RESTART IDENTITY CASCADE",
+    );
 
     for (const t of SEED_TREES) {
       const { rows } = await client.queryObject<{ id: number }>(
@@ -113,7 +115,7 @@ async function resetPostgres() {
 
 async function resetMongo() {
   const client = new MongoClient();
-  await client.connect("mongodb://localhost:27018");
+  await client.connect("mongodb://127.0.0.1:27018");
   try {
     const coll = client.database("cologne_datahub").collection("arboles");
     await coll.deleteMany({});

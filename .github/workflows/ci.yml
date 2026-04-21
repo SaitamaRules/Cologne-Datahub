@@ -61,7 +61,7 @@ jobs:
       - name: Wait for databases to accept connections
         run: |
           for i in {1..30}; do
-            if nc -z localhost 5433 && nc -z localhost 27018; then
+            if nc -z 127.0.0.1 5433 && nc -z 127.0.0.1 27018; then
               echo "Both databases ready after ${i}s"
               exit 0
             fi
