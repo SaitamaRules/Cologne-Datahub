@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-21
+
 ### Added
+
 - MongoDB endpoints (`/api/mongo/trees`, `/api/mongo/trees/:id`,
   `/api/mongo/trees/nearby`, `/api/mongo/statistics/neighborhoods`,
   `POST /api/mongo/trees`) with `$geoNear` geospatial aggregation.
@@ -28,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs-tfc/adr/` directory with MADR template and first ADR.
 
 ### Changed
+
 - `app/data/baumkataster.json` is no longer tracked in git (it was
   already listed in `.gitignore`).
 
