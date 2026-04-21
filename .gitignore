@@ -1,3 +1,18 @@
+# Environment
 .env
-data/baumkataster_full.json
-data/baumkataster.json
+.env.local
+
+# Application data (large, fetched locally)
+app/data/baumkataster.json
+app/data/baumkataster_full.json
+
+# Deno
+.deno/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
