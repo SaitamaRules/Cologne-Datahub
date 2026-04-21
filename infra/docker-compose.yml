@@ -1,0 +1,132 @@
+# Compose stack for Cologne DataHub.
+# Invoked from the repository root via the root Makefile (make up / make down).
+#
+# Networks:
+#   default — internal bridge. Only the `app` service publishes a port on the host.
+#
+# Volumes:
+#   pg_data    — PostgreSQL data directory
+#   mongo_data — MongoDB data directory
+
+name: cologne-datahub
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # Runs on first boot only (when pg_data is empty). Idempotent re-runs
+      # require wiping the volume; this is by design from the postgres image.
+      - ../app/queries/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  app:
+    build:
+      context: ../app
+    image: cologne-datahub:dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MONGO_URI: mongodb://mongo:27017
+      API_KEY: ${API_KEY}
+      PORT: "8000"
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      # Uses Deno itself as a tiny HTTP client. No curl in the alpine image.
+      test:
+        - "CMD"
+        - "deno"
+        - "eval"
+        - "const r = await fetch('http://localhost:8000/health'); if (r.status !== 200) Deno.exit(1);"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # One-shot data loaders. Not started by default.
+  # Use:  docker compose -f infra/docker-compose.yml --profile import run --rm import-pg
+  #       docker compose -f infra/docker-compose.yml --profile import run --rm import-mongo
+  #
+  # Both require app/data/baumkataster.json to exist on the host.
+  # Fetch it beforehand with:  make fetch-data
+
+  import-pg:
+    profiles: ["import"]
+    image: cologne-datahub:dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      API_KEY: ${API_KEY}
+    volumes:
+      - ../app/scripts:/app/scripts:ro
+      - ../app/data:/app/data:ro
+    command:
+      - "deno"
+      - "run"
+      - "--allow-read=/app"
+      - "--allow-net"
+      - "--allow-env"
+      - "scripts/import_pg.ts"
+
+  import-mongo:
+    profiles: ["import"]
+    image: cologne-datahub:dev
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      API_KEY: ${API_KEY}
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ../app/scripts:/app/scripts:ro
+      - ../app/data:/app/data:ro
+    command:
+      - "deno"
+      - "run"
+      - "--allow-read=/app"
+      - "--allow-net"
+      - "--allow-env"
+      - "scripts/import_mongo.ts"
+
+volumes:
+  pg_data:
+  mongo_data:
