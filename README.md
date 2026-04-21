@@ -28,10 +28,10 @@ Clone the repo:
 
 ```bash
 git clone https://github.com/SaitamaRules/Cologne-Datahub.git
-cd Cologne-Datahub
+cd Cologne-Datahub/app
 ```
 
-Create a `.env` file in the root:
+Create a .env file here (inside app/):
 
 ```
 DB_HOST=localhost
@@ -39,6 +39,7 @@ DB_NAME=cologne_datahub
 DB_USER=postgres
 DB_PASSWORD=your_password
 DB_PORT=5432
+MONGO_URI=mongodb://localhost:27017
 API_KEY=your_secret_key
 ```
 
@@ -118,22 +119,33 @@ With the server running, open `http://localhost:8000/docs` for the interactive S
 
 ```
 Cologne-Datahub/
-├── docs/              # openapi.json, swagger.html
-├── scripts/           # fetch_data.ts, import_pg.ts, import_mongo.ts
-├── queries/           # schema.sql, queries_pg.sql, queries_mongo.js
-├── src/
-│   ├── main.ts        # Entry point
-│   ├── db.ts          # PostgreSQL connection
-│   ├── mongo_db.ts    # MongoDB connection
-│   ├── middleware/
-│   │   └── auth.ts    # API key middleware
-│   └── routes/
-│       ├── arboles.ts         # PostgreSQL routes
-│       └── arboles_mongo.ts   # MongoDB routes
-├── tests/             # Postman collection
-├── data/              # Local data files (gitignored)
-├── DIARY.md           # Progress journal
-└── deno.json          # Deno config
+├── app/                   # Application (Erasmus+ deliverable)
+│   ├── src/
+│   │   ├── main.ts        # Entry point
+│   │   ├── db.ts          # PostgreSQL connection
+│   │   ├── mongo_db.ts    # MongoDB connection
+│   │   ├── middleware/
+│   │   │   └── auth.ts    # API key middleware
+│   │   └── routes/
+│   │       ├── arboles.ts         # PostgreSQL routes
+│   │       └── arboles_mongo.ts   # MongoDB routes
+│   ├── queries/           # schema.sql, queries_pg.sql, queries_mongo.js
+│   ├── scripts/           # fetch_data.ts, import_pg.ts, import_mongo.ts
+│   ├── docs/              # openapi.json, swagger.html
+│   ├── tests/             # Postman collection
+│   ├── data/              # Local data files (gitignored)
+│   ├── deno.json
+│   └── deno.lock
+├── docs-tfc/              # TFC documentation
+│   ├── DIARY.md           # Progress journal
+│   └── adr/               # Architecture Decision Records
+├── infra/                 # Infrastructure (TFC, Phase 1+)
+├── scripts/               # Operational scripts (TFC, Phase 8+)
+├── LICENSE
+├── SECURITY.md
+├── CHANGELOG.md
+├── Makefile
+└── README.md
 ```
 
 ## Issues I ran into

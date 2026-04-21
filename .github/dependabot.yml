@@ -1,0 +1,20 @@
+# Dependabot configuration
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Note: Deno has no native Dependabot support yet. Dependencies managed via
+# JSR / npm specifiers in app/deno.json are not covered here. Docker updates
+# will be added in Phase 1 once a Dockerfile exists.
+
+version: 2
+updates:
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "ci"

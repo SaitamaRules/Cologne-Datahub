@@ -12,8 +12,14 @@
     }
   ],
   "tags": [
-    { "name": "PostgreSQL", "description": "Endpoints backed by PostgreSQL (relational)" },
-    { "name": "MongoDB", "description": "Endpoints backed by MongoDB (document/GeoJSON)" }
+    {
+      "name": "PostgreSQL",
+      "description": "Endpoints backed by PostgreSQL (relational)"
+    },
+    {
+      "name": "MongoDB",
+      "description": "Endpoints backed by MongoDB (document/GeoJSON)"
+    }
   ],
   "paths": {
     "/api/trees": {
@@ -47,7 +53,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/TreePg" } },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TreePg" }
+                    },
                     "page": { "type": "integer" },
                     "limit": { "type": "integer" }
                   }
@@ -62,6 +71,7 @@
       "post": {
         "tags": ["PostgreSQL"],
         "summary": "Create a new tree",
+        "security": [{ "ApiKeyAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -73,8 +83,8 @@
                 "planting_year": 2021,
                 "street": "Aachener Str.",
                 "natural_monument": false,
-                "lat": 50.9350,
-                "lon": 6.9400
+                "lat": 50.935,
+                "lon": 6.94
               }
             }
           }
@@ -94,6 +104,7 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
           "422": { "description": "Missing required field (tree_number)" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
@@ -132,6 +143,7 @@
       "put": {
         "tags": ["PostgreSQL"],
         "summary": "Update a tree",
+        "security": [{ "ApiKeyAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -168,12 +180,14 @@
             }
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       },
       "delete": {
         "tags": ["PostgreSQL"],
         "summary": "Delete a tree",
+        "security": [{ "ApiKeyAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -197,6 +211,7 @@
             }
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
@@ -286,7 +301,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/TreeMongo" } },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TreeMongo" }
+                    },
                     "page": { "type": "integer" },
                     "limit": { "type": "integer" }
                   }
@@ -411,7 +429,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/TreeMongo" } },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TreeMongo" }
+                    },
                     "radius_meters": { "type": "integer" },
                     "total": { "type": "integer" }
                   }
@@ -440,7 +461,10 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "_id": { "type": "string", "description": "Neighborhood name" },
+                          "_id": {
+                            "type": "string",
+                            "description": "Neighborhood name"
+                          },
                           "count": { "type": "integer" }
                         }
                       }
