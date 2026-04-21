@@ -1,6 +1,28 @@
 {
   "tasks": {
-    "dev": "deno run --allow-net --allow-env --watch src/main.ts"
+    "dev": "deno run --allow-net --allow-env --allow-read --watch src/main.ts",
+    "start": "deno run --allow-net --allow-env --allow-read src/main.ts",
+    "test": "deno test --allow-net --allow-env --allow-read",
+    "fmt": "deno fmt",
+    "fmt:check": "deno fmt --check",
+    "lint": "deno lint",
+    "check": "deno check src/main.ts"
+  },
+  "fmt": {
+    "include": ["src/", "scripts/", "tests/"],
+    "exclude": ["data/", "docs/openapi.json"],
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "useTabs": false
+  },
+  "lint": {
+    "include": ["src/", "scripts/", "tests/"],
+    "exclude": ["data/"],
+    "rules": {
+      "tags": ["recommended"]
+    }
   },
   "imports": {
     "hono": "npm:hono@4.5.4",
