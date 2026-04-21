@@ -1,0 +1,41 @@
+# Ephemeral databases for integration tests.
+# Uses different ports and a dedicated project name so it never collides
+# with the main stack (infra/docker-compose.yml).
+#
+# Usage:
+#   docker compose -f infra/docker-compose.test.yml up -d --wait
+#   ...run tests against localhost:5433 / localhost:27018...
+#   docker compose -f infra/docker-compose.test.yml down -v
+
+name: cologne-datahub-test
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: cologne_datahub_test
+    ports:
+      - "127.0.0.1:5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ../app/queries/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d cologne_datahub_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  mongo-test:
+    image: mongo:7
+    ports:
+      - "127.0.0.1:27018:27017"
+    tmpfs:
+      - /data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
