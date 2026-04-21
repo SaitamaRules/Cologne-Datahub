@@ -1,13 +1,13 @@
 import { Pool } from "postgres";
-import { load } from "@std/dotenv";
-await load({ export: true });
+import { env } from "./lib/env.ts";
+
 export const pool = new Pool(
   {
-    hostname: Deno.env.get("DB_HOST") ?? "localhost",
-    database: Deno.env.get("DB_NAME") ?? "cologne_datahub",
-    user: Deno.env.get("DB_USER") ?? "postgres",
-    password: Deno.env.get("DB_PASSWORD"),
-    port: Number(Deno.env.get("DB_PORT") ?? 5432),
+    hostname: env.DB_HOST,
+    database: env.DB_NAME,
+    user: env.DB_USER,
+    password: env.DB_PASSWORD,
+    port: env.DB_PORT,
   },
   10,
 );

@@ -16,3 +16,6 @@ Thumbs.db
 # Editors
 .vscode/
 .idea/
+# Build logs
+*.log
+build.log

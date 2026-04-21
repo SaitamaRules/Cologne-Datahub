@@ -547,8 +547,22 @@
       },
       "Error": {
         "type": "object",
+        "required": ["error"],
         "properties": {
-          "error": { "type": "string" }
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable error code (stable, safe to match on)."
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable error description (may change freely)."
+              }
+            }
+          }
         }
       }
     },

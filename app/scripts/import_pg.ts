@@ -1,18 +1,21 @@
 import { Client } from "postgres";
+import { env } from "../src/lib/env.ts";
 
-const raw = await Deno.readTextFile("data/baumkataster.json");
+const DATA_PATH = Deno.env.get("DATA_PATH") ?? "data/baumkataster.json";
+
+const raw = await Deno.readTextFile(DATA_PATH);
 const geojson = JSON.parse(raw);
 
 const client = new Client({
-  hostname: Deno.env.get("DB_HOST") ?? "localhost",
-  database: Deno.env.get("DB_NAME") ?? "cologne_datahub",
-  user: Deno.env.get("DB_USER") ?? "postgres",
-  password: Deno.env.get("DB_PASSWORD"),
-  port: Number(Deno.env.get("DB_PORT") ?? 5432),
+  hostname: env.DB_HOST,
+  database: env.DB_NAME,
+  user: env.DB_USER,
+  password: env.DB_PASSWORD,
+  port: env.DB_PORT,
 });
 
 await client.connect();
-console.log("Connected to PostgreSQL. Initializing import...");
+console.log(`Connected to PostgreSQL at ${env.DB_HOST}:${env.DB_PORT}. Importing ${geojson.features.length} features...`);
 
 const parseNum = (val: string) =>
   val === "" || val === undefined || val === null ? null : Number(val);
