@@ -3,170 +3,90 @@
 [![CI](https://github.com/SaitamaRules/Cologne-Datahub/actions/workflows/ci.yml/badge.svg)](https://github.com/SaitamaRules/Cologne-Datahub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This project was developed during my Erasmus+ mobility in Cologne (ASIR Higher Degree). The goal is to work with real spatial data from the city's tree registry and build a backend around it.
+This project was developed during my Erasmus+ mobility in Cologne (ASIR Higher Degree) and continues as my Final Year Project (TFC).
 
-## Description
+It takes the REST API I built at the ZfL (University of Cologne) — serving public tree registry data from the city — and grows it into a full production-style system with segmented networking, TLS, CI, backups and monitoring.
 
-The city of Cologne has a public tree registry (Baumkataster) available as a WFS service. It has data on every publicly managed tree: species, size, planting year, neighborhood, street, coordinates... about 58 MB of GeoJSON in total.
+**Data source:** [Cologne Tree Registry (GeoJSON/WFS)](https://geoportal.stadt-koeln.de/)
 
-The project is split into weekly stages:
+## 🎬 Checkpoint video
 
-- **Week 1** — Fetched the GeoJSON from the WFS, designed a relational schema, imported everything into PostgreSQL and wrote SQL queries.
-- **Week 2** — Built a REST API with Deno and Hono to expose the PostgreSQL data. Full CRUD + stats endpoints, tested with Postman.
-- **Week 3** — Imported the same data into MongoDB without any transformation, ran geospatial queries, and wrote a comparison between both databases.
-- **Week 4** — Added MongoDB endpoints to the API (including a geo query), protected write operations with API key authentication, and wrote OpenAPI documentation.
+<!-- TODO: paste YouTube/Vimeo link here once uploaded -->
 
-**WFS Source:** [Cologne Tree Registry (GeoJSON)](https://geoportal.stadt-koeln.de/wss/service/baumkataster_extern_wfs/guest?service=WFS&version=2.0.0&request=GetFeature&typeNames=ms:baumkataster&outputFormat=application/json;%20subtype=geojson)
+## Current status
 
-## Requirements
+The TFC is organised in 10 phases. Progress so far:
 
-- Deno 2.x
-- PostgreSQL 15+
-- MongoDB 7.x
-- Git
+| Phase | Title                                   | Status         | Tag      |
+| ----- | --------------------------------------- | -------------- | -------- |
+| 0     | Baseline & repo professionalisation     | ✅ Done        | `v0.4.1` |
+| 1     | Containerisation (Docker + Compose)     | ✅ Done        | `v0.5.0` |
+| 2     | Continuous Integration (GitHub Actions) | ✅ Done        | `v0.6.0` |
+| 3     | Reverse proxy (Nginx)                   | ✅ Done        | `v0.7.0` |
+| 4     | TLS with internal CA (OpenSSL)          | 🟡 In progress | —        |
+| 5–10  | See [ROADMAP](docs/ROADMAP.md)          | ⏳ Pending     | —        |
 
-## Setup
+## Quickstart
 
-Clone the repo:
+Requirements: Docker Desktop or Docker Engine with Compose v2.
 
 ```bash
 git clone https://github.com/SaitamaRules/Cologne-Datahub.git
-cd Cologne-Datahub/app
+cd Cologne-Datahub
+cp .env.example .env
+# Edit .env — set DB_PASSWORD and API_KEY to your own values.
+
+docker compose -f infra/docker-compose.yml --env-file .env up -d --build
 ```
 
-Create a .env file here (inside app/):
-
-```
-DB_HOST=localhost
-DB_NAME=cologne_datahub
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_PORT=5432
-MONGO_URI=mongodb://localhost:27017
-API_KEY=your_secret_key
-```
-
-### PostgreSQL
-
-Create the database, run the schema and import:
+The API is reachable through the Nginx proxy at `http://localhost`:
 
 ```bash
-createdb cologne_datahub
-psql -d cologne_datahub -f queries/schema.sql
-deno run --allow-net --allow-write scripts/fetch_data.ts
-deno run --allow-read --allow-net --allow-env scripts/import_pg.ts
+curl http://localhost/health                # App liveness (proxied)
+curl http://localhost/health/ready          # Readiness: Postgres + Mongo
+curl "http://localhost/api/trees?limit=3"   # After seeding data
 ```
 
-### MongoDB
+Interactive API docs (Swagger UI): <http://localhost/docs>
 
-Make sure `mongod` is running, then:
+To stop: `docker compose -f infra/docker-compose.yml --env-file .env down`
 
-```bash
-deno run --allow-read --allow-net scripts/import_mongo.ts
-```
+Full instructions (including seeding real data from the Cologne WFS and running against the test databases) are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-After importing, create the geo index:
+## Documentation map
 
-```js
-use cologne_datahub
-db.arboles.createIndex({ geometry: "2dsphere" })
-```
+- **[API reference](docs/API.md)** — every endpoint, authentication, error format.
+- **[Architecture](docs/ARCHITECTURE.md)** — stack, data flow, repo layout, seeding instructions.
+- **[Roadmap](docs/ROADMAP.md)** — phase-by-phase breakdown and what each delivers.
+- **[Bibliography](docs/BIBLIOGRAPHY.md)** — data sources, tooling, standards.
+- **[Changelog](CHANGELOG.md)** — versioned history of every change.
+- **[Architecture Decision Records](docs-tfc/adr/)** — why each major choice was made.
 
-### Run the API
+## Continuous Integration
 
-```bash
-deno task dev
-```
+Every push to `main` or a `tfc/**` branch runs four parallel jobs:
 
-Starts on `http://localhost:8000`.
+- **Lint & typecheck** — `deno fmt --check`, `deno lint`, `deno check`.
+- **Integration tests** — 14 tests against real ephemeral PostgreSQL and MongoDB instances (no mocks).
+- **Docker build** — Multi-stage, non-root image, with GHA layer cache.
+- **End-to-end** — Spins up the full stack and validates the proxy: `X-Request-ID` round-trip, deny-by-default on unknown paths, readiness of both databases.
 
-## API Endpoints
+## Contributing
 
-### PostgreSQL
+This is a personal academic project, but issues and suggestions from the ZfL and evaluating faculty are very welcome.
 
-| Method | Endpoint                        | Description                                            |
-| ------ | ------------------------------- | ------------------------------------------------------ |
-| GET    | `/api/trees`                    | All trees (`?page=1&limit=20`, `?neighborhood=Nippes`) |
-| GET    | `/api/trees/:id`                | Single tree by ID                                      |
-| POST   | `/api/trees`                    | Create a tree                                          |
-| PUT    | `/api/trees/:id`                | Update a tree                                          |
-| DELETE | `/api/trees/:id`                | Delete a tree                                          |
-| GET    | `/api/statistics/neighborhoods` | Tree count per neighborhood                            |
-| GET    | `/api/statistics/species`       | Top 10 species                                         |
+See [`SECURITY.md`](SECURITY.md) for responsible disclosure of security issues.
 
-### MongoDB
+## License
 
-| Method | Endpoint                              | Description                                  |
-| ------ | ------------------------------------- | -------------------------------------------- |
-| GET    | `/api/mongo/trees`                    | All trees (`?page=1&limit=20`)               |
-| GET    | `/api/mongo/trees/:id`                | Single tree by MongoDB `_id`                 |
-| GET    | `/api/mongo/trees/nearby`             | Geo query (`?lat=50.94&lon=6.95&radius=500`) |
-| GET    | `/api/mongo/statistics/neighborhoods` | Tree count per neighborhood                  |
-| POST   | `/api/mongo/trees`                    | Create a tree (GeoJSON Feature)              |
-
-### Authentication
-
-Write operations (POST, PUT, DELETE) require an API key. Send it as a header:
-
-```
-x-api-key: your_secret_key
-```
-
-GET endpoints are public.
-
-### API Documentation
-
-With the server running, open `http://localhost:8000/docs` for the interactive Swagger UI.
-
-## Project Structure
-
-```
-Cologne-Datahub/
-├── app/                   # Application (Erasmus+ deliverable)
-│   ├── src/
-│   │   ├── main.ts        # Entry point
-│   │   ├── db.ts          # PostgreSQL connection
-│   │   ├── mongo_db.ts    # MongoDB connection
-│   │   ├── middleware/
-│   │   │   └── auth.ts    # API key middleware
-│   │   └── routes/
-│   │       ├── arboles.ts         # PostgreSQL routes
-│   │       └── arboles_mongo.ts   # MongoDB routes
-│   ├── queries/           # schema.sql, queries_pg.sql, queries_mongo.js
-│   ├── scripts/           # fetch_data.ts, import_pg.ts, import_mongo.ts
-│   ├── docs/              # openapi.json, swagger.html
-│   ├── tests/             # Postman collection
-│   ├── data/              # Local data files (gitignored)
-│   ├── deno.json
-│   └── deno.lock
-├── docs-tfc/              # TFC documentation
-│   ├── DIARY.md           # Progress journal
-│   └── adr/               # Architecture Decision Records
-├── infra/                 # Infrastructure (TFC, Phase 1+)
-├── scripts/               # Operational scripts (TFC, Phase 8+)
-├── LICENSE
-├── SECURITY.md
-├── CHANGELOG.md
-├── Makefile
-└── README.md
-```
-
-## Issues I ran into
-
-- The university firewall blocked the WFS connection. Had to use a mobile hotspot.
-- Importing 58 MB into MongoDB with a single `insertMany()` crashed. Fixed it by batching in groups of 500.
-- The WFS coordinates are in EPSG:25832 (meters), not WGS84 (degrees). MongoDB needs WGS84 for the `2dsphere` index, so I used `proj4` to convert them before inserting.
+MIT — see [`LICENSE`](LICENSE).
 
 ---
 
-## 🇪🇸 Apéndice Académico: Proyecto Final ASIR
+## 🇪🇸 Apéndice académico (ASIR)
 
-_Nota: Esta sección está redactada en español, ya que documenta el uso de este repositorio para mi evaluación académica en España._
+Este repositorio se presenta como **Trabajo de Fin de Ciclo** del Grado Superior en Administración de Sistemas Informáticos en Red (ASIR). El código parte del proyecto desarrollado durante la movilidad Erasmus+ en el ZfL de la Universidad de Colonia, y el TFC consiste en extenderlo con toda la infraestructura que lo rodea: firewall, segmentación DMZ/LAN, orquestación, proxy inverso, TLS, backups y monitorización.
 
-Este código base, desarrollado originalmente durante mi movilidad Erasmus+ en Colonia, sirve como núcleo para mi **Trabajo de Fin de Ciclo (TFC)** del Grado Superior en Administración de Sistemas Informáticos en Red (ASIR).
-
-El objetivo del proyecto final no es solo el código, sino el diseño, despliegue y securización de toda la infraestructura que lo soporta (implementando un firewall OPNsense, DMZ/LAN segmentadas, orquestación con Docker, Proxy Inverso con Nginx y monitorización nativa en Python).
-
-Puedes consultar la planificación completa, los objetivos y la arquitectura de sistemas en el siguiente enlace:
+Toda la documentación técnica de este repositorio está en inglés para mantener la coherencia con el contexto Erasmus+. La planificación completa y el anteproyecto académico (en español) están disponibles aquí:
 
 📄 **[Ver Anteproyecto de Infraestructura (Notion)](https://cologne-datahub.notion.site/Cologne-Datahub-32dd13355df8804db043f28942998cc6?pvs=141)**
