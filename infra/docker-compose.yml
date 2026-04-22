@@ -90,11 +90,11 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 80"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
 
   # One-shot data loaders. Not started by default.
   # Use:  docker compose -f infra/docker-compose.yml --profile import run --rm import-pg
