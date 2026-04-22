@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-22
+
+### Added
+
+- Nginx reverse proxy (`nginx:alpine`) in front of the application,
+  with upstream to `app:8000`, JSON access logs, `X-Request-ID`
+  propagation and a dedicated `/nginx-health` edge probe.
+- Shared `snippets/proxy.conf` with the common `proxy_*` directives,
+  included from every proxied location to avoid drift.
+- `infra/nginx/` directory with the full proxy configuration and a
+  brief README documenting the route table and the planned evolution
+  (TLS in Phase 4, rate limiting in Phase 5).
+- End-to-end smoke test in CI: spins up the full stack, probes
+  `/nginx-health`, `/health`, `/health/ready`, verifies `X-Request-ID`
+  round-trip and the deny-by-default 404 on unknown paths.
+- ADR-0005 documenting the choice of Nginx over Caddy, Traefik and
+  no-proxy alternatives.
+
+### Changed
+
+- The application service no longer publishes a port to the host.
+  The only externally reachable service is Nginx (`127.0.0.1:80`),
+  which in turn forwards to the app inside the compose network.
+- The healthcheck for the Nginx service uses `nc -z 127.0.0.1 80`.
+  Bound to `127.0.0.1` explicitly to avoid IPv6 resolution surprises
+  on the official `nginx:alpine` image (same lesson as the test
+  suite in Phase 2).
+- CI `e2e` job waits for all services to become healthy by polling
+  `docker compose ps` instead of relying on `--wait`, which proved
+  unreliable alongside `--build`.
+
 ## [0.6.0] - 2026-04-21
 
 ### Added
