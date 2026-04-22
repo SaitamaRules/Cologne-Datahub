@@ -9,10 +9,6 @@ It takes the REST API I built at the ZfL (University of Cologne) — serving pub
 
 **Data source:** [Cologne Tree Registry (GeoJSON/WFS)](https://geoportal.stadt-koeln.de/)
 
-## 🎬 Checkpoint video
-
-<!-- TODO: paste YouTube/Vimeo link here once uploaded -->
-
 ## Current status
 
 The TFC is organised in 10 phases. Progress so far:
