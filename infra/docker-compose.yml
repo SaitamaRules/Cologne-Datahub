@@ -38,8 +38,7 @@ services:
     volumes:
       - mongo_data:/data/db
     healthcheck:
-      test:
-        ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -65,7 +64,7 @@ services:
       API_KEY: ${API_KEY}
       PORT: "8000"
     # No `ports:` here — the app is only reachable via the `nginx` service
-    # over the internal compose network. Phase 3 closes this loop.
+    # over the internal compose network.
     healthcheck:
       # Uses Deno itself as a tiny HTTP client. No curl in the alpine image.
       test:
@@ -86,9 +85,11 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./certs/out:/etc/nginx/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 80"]
       interval: 5s
