@@ -1,0 +1,66 @@
+# OpenSSL configuration for Cologne DataHub's internal CA.
+#
+# This file is versioned and contains no secrets. The actual keys and
+# certificates are written to ./out/ which is gitignored.
+#
+# Two sections matter for the project:
+#   - [ ca_ext ]            extensions applied to the root CA certificate.
+#   - [ server_ext ]        extensions applied to the server certificate.
+#
+# Subject Alternative Names live under [ alt_names ] and cover:
+#   1. cologne-datahub.local  — the canonical hostname (resolved by BIND9
+#                                inside the deployment, see Phase 6).
+#   2. localhost              — for local development on the host machine.
+#   3. 127.0.0.1              — same, by IP, useful for tooling and tests.
+
+[ req ]
+default_bits        = 2048
+default_md          = sha256
+prompt              = no
+distinguished_name  = req_dn
+req_extensions      = csr_ext
+
+[ req_dn ]
+C  = ES
+ST = Andalucia
+L  = Malaga
+O  = Cologne DataHub
+OU = TFC ASIR
+CN = cologne-datahub.local
+
+[ csr_ext ]
+subjectAltName = @alt_names
+
+# --- Root CA --------------------------------------------------------------
+# Used when self-signing the root CA certificate.
+
+[ ca_dn ]
+C  = ES
+ST = Andalucia
+L  = Malaga
+O  = Cologne DataHub Internal CA
+OU = TFC ASIR
+CN = Cologne DataHub Root CA
+
+[ ca_ext ]
+basicConstraints       = critical, CA:TRUE
+keyUsage               = critical, keyCertSign, cRLSign
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+
+# --- Server certificate ---------------------------------------------------
+# Used when signing the server certificate. Key usage is restricted to what
+# a TLS server actually needs — no signing, no client authentication.
+
+[ server_ext ]
+basicConstraints       = critical, CA:FALSE
+keyUsage               = critical, digitalSignature, keyEncipherment
+extendedKeyUsage       = serverAuth
+subjectAltName         = @alt_names
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid,issuer
+
+[ alt_names ]
+DNS.1 = cologne-datahub.local
+DNS.2 = localhost
+IP.1  = 127.0.0.1
