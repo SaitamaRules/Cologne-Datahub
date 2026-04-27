@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-04-27
+
+### Added
+
+- Internal Certificate Authority. The script
+  `infra/certs/generate-certs.sh` (run inside an `alpine/openssl`
+  container) creates a 4096-bit RSA root CA valid for ten years and
+  signs a 2048-bit RSA server certificate, also valid for ten years,
+  covering `cologne-datahub.local`, `localhost`, and `127.0.0.1`.
+- Versioned `infra/certs/openssl.cnf` with explicit X.509 extensions
+  for both the CA and the server certificate (key usage, extended key
+  usage, SANs, basic constraints).
+- TLS termination in Nginx on port 443. HTTP/2 enabled. TLS 1.2 and
+  1.3 only, with AEAD cipher suites and server-side preference.
+  `ssl_session_tickets off` to keep forward secrecy guarantees on
+  reconnects.
+- HSTS header with `max-age=31536000; includeSubDomains` on every
+  HTTPS response.
+- HTTP-to-HTTPS redirect (`301`) on every request to port 80, with
+  the single exception of `/nginx-health` which stays plain to keep
+  Docker healthchecks free of CA awareness.
+- CI E2E job extended for HTTPS: generates a fresh CA and server
+  certificate per run, validates the redirect, the HSTS header,
+  `X-Request-ID` propagation, and that TLS 1.0 is rejected.
+- ADR-0006 documenting the choice of an internal CA over Let's
+  Encrypt, self-signed certificates, and mkcert.
+
+### Changed
+
+- The Nginx service in the main compose stack now publishes both
+  ports 80 and 443 on `127.0.0.1`. The certificate directory
+  (`infra/certs/out/`) is mounted read-only into the container.
+- `infra/certs/out/` added to `.gitignore`. The CA and server
+  private keys are never committed.
+
 ## [0.7.0] - 2026-04-22
 
 ### Added
