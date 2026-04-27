@@ -2,17 +2,47 @@
 # Invoked from the repository root via the root Makefile (make up / make down).
 #
 # Networks:
-#   default — internal bridge. Only the `nginx` service publishes ports
-#             on the host. The application is reachable from outside only
-#             through the proxy.
+#   default — internal bridge with a fixed /24 subnet so the BIND9 zone
+#             file can pin service addresses. Only the `nginx` service
+#             publishes ports to the host.
 #
 # Volumes:
 #   pg_data    — PostgreSQL data directory
 #   mongo_data — MongoDB data directory
+#
+# Service-to-service communication uses FQDNs from the cologne.local
+# zone (resolved by the bind9 service). Nothing in the application
+# config refers to compose service names directly any more — that
+# decoupling is what allows Phase 7 to relocate services across
+# DMZ/LAN segments without touching the application code.
 
 name: cologne-datahub
 
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1
+
 services:
+  bind9:
+    image: ubuntu/bind9:latest
+    restart: unless-stopped
+    volumes:
+      - ./bind9/named.conf:/etc/bind/named.conf:ro
+      - ./bind9/zones:/etc/bind/zones:ro
+    networks:
+      default:
+        ipv4_address: 172.28.0.5
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep named || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -22,9 +52,12 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # Runs on first boot only (when pg_data is empty). Idempotent re-runs
-      # require wiping the volume; this is by design from the postgres image.
       - ../app/queries/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      default:
+        ipv4_address: 172.28.0.10
+    dns:
+      - 172.28.0.5
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -37,6 +70,11 @@ services:
     restart: unless-stopped
     volumes:
       - mongo_data:/data/db
+    networks:
+      default:
+        ipv4_address: 172.28.0.11
+    dns:
+      - 172.28.0.5
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
       interval: 10s
@@ -50,23 +88,27 @@ services:
     image: cologne-datahub:dev
     restart: unless-stopped
     depends_on:
+      bind9:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       mongo:
         condition: service_healthy
     environment:
-      DB_HOST: postgres
+      DB_HOST: db-pg.cologne.local
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      MONGO_URI: mongodb://mongo:27017
+      MONGO_URI: mongodb://db-mongo.cologne.local:27017
       API_KEY: ${API_KEY}
       PORT: "8000"
-    # No `ports:` here — the app is only reachable via the `nginx` service
-    # over the internal compose network.
+    networks:
+      default:
+        ipv4_address: 172.28.0.20
+    dns:
+      - 172.28.0.5
     healthcheck:
-      # Uses Deno itself as a tiny HTTP client. No curl in the alpine image.
       test:
         - "CMD"
         - "deno"
@@ -90,6 +132,11 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
       - ./certs/out:/etc/nginx/certs:ro
+    networks:
+      default:
+        ipv4_address: 172.28.0.30
+    dns:
+      - 172.28.0.5
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 80"]
       interval: 5s
@@ -108,15 +155,19 @@ services:
     profiles: ["import"]
     image: cologne-datahub:dev
     depends_on:
+      bind9:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     environment:
-      DB_HOST: postgres
+      DB_HOST: db-pg.cologne.local
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       API_KEY: ${API_KEY}
+    dns:
+      - 172.28.0.5
     volumes:
       - ../app/scripts:/app/scripts:ro
       - ../app/data:/app/data:ro
@@ -132,12 +183,16 @@ services:
     profiles: ["import"]
     image: cologne-datahub:dev
     depends_on:
+      bind9:
+        condition: service_healthy
       mongo:
         condition: service_healthy
     environment:
-      MONGO_URI: mongodb://mongo:27017
+      MONGO_URI: mongodb://db-mongo.cologne.local:27017
       API_KEY: ${API_KEY}
       DB_PASSWORD: ${DB_PASSWORD}
+    dns:
+      - 172.28.0.5
     volumes:
       - ../app/scripts:/app/scripts:ro
       - ../app/data:/app/data:ro

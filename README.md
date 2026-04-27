@@ -2,25 +2,19 @@
 
 [![CI](https://github.com/SaitamaRules/Cologne-Datahub/actions/workflows/ci.yml/badge.svg)](https://github.com/SaitamaRules/Cologne-Datahub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Latest release](https://img.shields.io/github/v/tag/SaitamaRules/Cologne-Datahub?label=release&sort=semver)](https://github.com/SaitamaRules/Cologne-Datahub/tags)
 
 This project was developed during my Erasmus+ mobility in Cologne (ASIR Higher Degree) and continues as my Final Year Project (TFC).
 
-It takes the REST API I built at the ZfL (University of Cologne) — serving public tree registry data from the city — and grows it into a full production-style system with segmented networking, TLS, CI, backups and monitoring.
+It takes the REST API I built at the ZfL (University of Cologne) — serving public tree registry data from the city — and grows it into a full production-style system with segmented networking, TLS, internal DNS, rate limiting, CI, backups and monitoring.
 
 **Data source:** [Cologne Tree Registry (GeoJSON/WFS)](https://geoportal.stadt-koeln.de/)
 
-## Current status
+## Status
 
-The TFC is organised in 10 phases. Progress so far:
+**7 of 10 phases completed.** The latest release covers internal DNS with BIND9, on top of the proxy with TLS and L7 rate limiting from previous phases. Remaining phases tackle the OPNsense perimeter (DMZ/LAN split), automated backups, monitoring and the final report.
 
-| Phase | Title                                   | Status         | Tag      |
-| ----- | --------------------------------------- | -------------- | -------- |
-| 0     | Baseline & repo professionalisation     | ✅ Done        | `v0.4.1` |
-| 1     | Containerisation (Docker + Compose)     | ✅ Done        | `v0.5.0` |
-| 2     | Continuous Integration (GitHub Actions) | ✅ Done        | `v0.6.0` |
-| 3     | Reverse proxy (Nginx)                   | ✅ Done        | `v0.7.0` |
-| 4     | TLS with internal CA (OpenSSL)          | 🟡 In progress | —        |
-| 5–10  | See [ROADMAP](docs/ROADMAP.md)          | ⏳ Pending     | —        |
+Full breakdown in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Quickstart
 
@@ -32,22 +26,27 @@ cd Cologne-Datahub
 cp .env.example .env
 # Edit .env — set DB_PASSWORD and API_KEY to your own values.
 
+# Generate the internal CA and server certificate (one-off, ~5 seconds).
+docker run --rm -v "$PWD/infra/certs:/work" -w /work \
+    --entrypoint sh alpine/openssl generate-certs.sh
+
+# Bring up the stack.
 docker compose -f infra/docker-compose.yml --env-file .env up -d --build
 ```
 
-The API is reachable through the Nginx proxy at `http://localhost`:
+The API is reachable through the Nginx proxy. HTTP redirects to HTTPS; the certificate is signed by the internal CA you just generated, so pass it to `curl` with `--cacert`:
 
 ```bash
-curl http://localhost/health                # App liveness (proxied)
-curl http://localhost/health/ready          # Readiness: Postgres + Mongo
-curl "http://localhost/api/trees?limit=3"   # After seeding data
+curl --cacert infra/certs/out/ca.crt https://localhost/health
+curl --cacert infra/certs/out/ca.crt https://localhost/health/ready
+curl --cacert infra/certs/out/ca.crt "https://localhost/api/trees?limit=3"   # After seeding data
 ```
 
-Interactive API docs (Swagger UI): <http://localhost/docs>
+Interactive API docs (Swagger UI): <https://localhost/docs>
 
 To stop: `docker compose -f infra/docker-compose.yml --env-file .env down`
 
-Full instructions (including seeding real data from the Cologne WFS and running against the test databases) are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Seeding real data from the Cologne WFS, running tests against ephemeral databases, and trusting the CA system-wide are documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`infra/certs/README.md`](infra/certs/README.md).
 
 ## Documentation map
 
@@ -57,15 +56,13 @@ Full instructions (including seeding real data from the Cologne WFS and running 
 - **[Bibliography](docs/BIBLIOGRAPHY.md)** — data sources, tooling, standards.
 - **[Changelog](CHANGELOG.md)** — versioned history of every change.
 - **[Architecture Decision Records](docs-tfc/adr/)** — why each major choice was made.
+- **Subsystem docs:** [Nginx](infra/nginx/README.md) · [Rate limits](infra/nginx/RATE_LIMITS.md) · [Internal CA](infra/certs/README.md) · [BIND9](infra/bind9/README.md)
 
 ## Continuous Integration
 
-Every push to `main` or a `tfc/**` branch runs four parallel jobs:
+Every push to `main` or a `tfc/**` branch runs four parallel jobs: lint and typecheck, integration tests against real ephemeral databases (no mocks), Docker image build with GHA layer cache, and a full end-to-end run of the stack that asserts internal DNS resolution, the HTTP→HTTPS redirect, the HSTS header, `X-Request-ID` round-trip, deny-by-default on unknown paths, that TLS 1.0 is rejected, and that the rate limiter rejects burst traffic with `429`.
 
-- **Lint & typecheck** — `deno fmt --check`, `deno lint`, `deno check`.
-- **Integration tests** — 14 tests against real ephemeral PostgreSQL and MongoDB instances (no mocks).
-- **Docker build** — Multi-stage, non-root image, with GHA layer cache.
-- **End-to-end** — Spins up the full stack and validates the proxy: `X-Request-ID` round-trip, deny-by-default on unknown paths, readiness of both databases.
+The complete workflow lives in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Contributing
 
