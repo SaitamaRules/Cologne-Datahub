@@ -1,0 +1,23 @@
+; Reverse zone for 172.28.0.0/24
+;
+; Allows `dig -x 172.28.0.20` to return `api.cologne.local`. Mirrors
+; the forward zone; the two must stay in sync.
+
+$TTL 3600
+
+@ IN SOA ns.cologne.local. admin.cologne.local. (
+    2026042701  ; Serial — bump on every change
+    3600        ; Refresh
+    600         ; Retry
+    604800      ; Expire
+    300         ; Negative TTL
+)
+
+@           IN  NS    ns.cologne.local.
+
+; PTR records (last octet of the IP, since we cover a /24).
+5           IN  PTR   ns.cologne.local.
+20          IN  PTR   api.cologne.local.
+10          IN  PTR   db-pg.cologne.local.
+11          IN  PTR   db-mongo.cologne.local.
+30          IN  PTR   proxy.cologne.local.

@@ -1,0 +1,29 @@
+; Forward zone for cologne.local
+;
+; Maps internal service FQDNs to fixed IPs inside the compose network.
+; The IPs are pinned in docker-compose.yml under each service's
+; `networks` block, so this file and the compose file must agree.
+;
+; In Phase 7, only the right-hand side of the A records changes (to
+; LAN/DMZ IPs). The names stay the same; that is the point of having
+; FQDNs in the first place.
+
+$TTL 3600
+
+@ IN SOA ns.cologne.local. admin.cologne.local. (
+    2026042701  ; Serial — bump on every change
+    3600        ; Refresh
+    600         ; Retry
+    604800      ; Expire
+    300         ; Negative TTL
+)
+
+; Authoritative name server for the zone.
+@           IN  NS    ns.cologne.local.
+
+; Service A records.
+ns          IN  A     172.28.0.5
+api         IN  A     172.28.0.20
+db-pg       IN  A     172.28.0.10
+db-mongo    IN  A     172.28.0.11
+proxy       IN  A     172.28.0.30
