@@ -100,7 +100,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   e2e:
-    name: End-to-end (proxy)
+    name: End-to-end (proxy with TLS)
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -115,6 +115,16 @@ jobs:
           DB_PASSWORD=ci-password
           API_KEY=ci-api-key
           EOF
+
+      # Generate a fresh internal CA and server certificate just for this
+      # run. The certificates never leave the runner; they are produced
+      # exactly the same way Francisco would on his laptop, exercising the
+      # script that ships with the project.
+      - name: Generate ephemeral certificates
+        run: |
+          docker run --rm -v "$PWD/infra/certs:/work" -w /work \
+            --entrypoint sh alpine/openssl generate-certs.sh
+          ls -la infra/certs/out/
 
       - name: Build images
         run: docker compose -f infra/docker-compose.yml --env-file .env build
@@ -141,53 +151,89 @@ jobs:
           docker compose -f infra/docker-compose.yml --env-file .env logs --tail=100
           exit 1
 
-      - name: Verify proxy port is reachable
+      - name: Verify proxy ports are reachable
         run: |
           for i in {1..15}; do
-            if nc -z 127.0.0.1 80; then
-              echo "Port 80 open after ${i}s"
+            if nc -z 127.0.0.1 80 && nc -z 127.0.0.1 443; then
+              echo "Ports 80 and 443 open after ${i}s"
               exit 0
             fi
             sleep 1
           done
-          echo "Port 80 never opened"
+          echo "Ports never opened"
           docker compose -f infra/docker-compose.yml --env-file .env ps
           docker compose -f infra/docker-compose.yml --env-file .env logs nginx --tail=100
           exit 1
 
-      - name: Probe the proxy
+      - name: Probe the proxy over HTTPS
+        env:
+          CACERT: infra/certs/out/ca.crt
         run: |
           set -e
-          echo "::group::nginx-health (edge)"
+
+          echo "::group::nginx-health (plain HTTP, internal probe path)"
           curl --fail --silent --show-error http://127.0.0.1/nginx-health
           echo
           echo "::endgroup::"
 
-          echo "::group::/health (proxied to app)"
-          curl --fail --silent --show-error http://127.0.0.1/health | tee /tmp/health.json
+          echo "::group::HTTP -> HTTPS redirect on /health"
+          status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+            http://127.0.0.1/health)
+          location=$(curl --silent --head http://127.0.0.1/health | grep -i '^location:' | tr -d '\r')
+          echo "status=$status"
+          echo "$location"
+          test "$status" = "301"
+          echo "$location" | grep -qi '^location: https://'
+          echo "::endgroup::"
+
+          echo "::group::/health over HTTPS"
+          curl --fail --silent --show-error --cacert "$CACERT" \
+            https://127.0.0.1/health | tee /tmp/health.json
           grep -q '"status":"ok"' /tmp/health.json
           echo
           echo "::endgroup::"
 
-          echo "::group::/health/ready (proxied, both engines)"
-          curl --fail --silent --show-error http://127.0.0.1/health/ready | tee /tmp/ready.json
+          echo "::group::/health/ready over HTTPS (both engines)"
+          curl --fail --silent --show-error --cacert "$CACERT" \
+            https://127.0.0.1/health/ready | tee /tmp/ready.json
           grep -q '"postgres":"ok"' /tmp/ready.json
           grep -q '"mongo":"ok"' /tmp/ready.json
           echo
           echo "::endgroup::"
 
-          echo "::group::X-Request-ID round-trip"
+          echo "::group::HSTS header is present"
           response_headers=$(curl --silent --show-error -D - -o /dev/null \
-            -H "X-Request-ID: ci-smoke-test" http://127.0.0.1/health)
+            --cacert "$CACERT" https://127.0.0.1/health)
+          echo "$response_headers"
+          echo "$response_headers" | grep -qi '^strict-transport-security: max-age='
+          echo "::endgroup::"
+
+          echo "::group::X-Request-ID round-trip over HTTPS"
+          response_headers=$(curl --silent --show-error -D - -o /dev/null \
+            --cacert "$CACERT" \
+            -H "X-Request-ID: ci-smoke-test" https://127.0.0.1/health)
           echo "$response_headers"
           echo "$response_headers" | grep -qi "^x-request-id: ci-smoke-test"
           echo "::endgroup::"
 
           echo "::group::Unknown path returns 404 at the edge"
           status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-            http://127.0.0.1/does-not-exist)
+            --cacert "$CACERT" https://127.0.0.1/does-not-exist)
           test "$status" = "404"
           echo "OK (got $status)"
+          echo "::endgroup::"
+
+          echo "::group::TLS 1.0 is rejected"
+          # openssl s_client returns non-zero when the protocol is rejected.
+          # We invert the check: if it succeeds, the server accepted TLS 1.0
+          # and the test fails.
+          if echo | docker run --rm -i --network host alpine/openssl \
+            s_client -connect 127.0.0.1:443 -tls1 2>/dev/null \
+            | grep -q "Cipher    :"; then
+            echo "TLS 1.0 was accepted — this is wrong"
+            exit 1
+          fi
+          echo "OK (TLS 1.0 rejected)"
           echo "::endgroup::"
 
       - name: Dump logs on failure
