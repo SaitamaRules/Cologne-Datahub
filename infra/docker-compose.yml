@@ -9,6 +9,12 @@
 # Volumes:
 #   pg_data    — PostgreSQL data directory
 #   mongo_data — MongoDB data directory
+#
+# Service-to-service communication uses FQDNs from the cologne.local
+# zone (resolved by the bind9 service). Nothing in the application
+# config refers to compose service names directly any more — that
+# decoupling is what allows Phase 7 to relocate services across
+# DMZ/LAN segments without touching the application code.
 
 name: cologne-datahub
 
@@ -70,8 +76,7 @@ services:
     dns:
       - 172.28.0.5
     healthcheck:
-      test:
-        ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -90,12 +95,12 @@ services:
       mongo:
         condition: service_healthy
     environment:
-      DB_HOST: postgres
+      DB_HOST: db-pg.cologne.local
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      MONGO_URI: mongodb://mongo:27017
+      MONGO_URI: mongodb://db-mongo.cologne.local:27017
       API_KEY: ${API_KEY}
       PORT: "8000"
     networks:
@@ -155,7 +160,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DB_HOST: postgres
+      DB_HOST: db-pg.cologne.local
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -183,7 +188,7 @@ services:
       mongo:
         condition: service_healthy
     environment:
-      MONGO_URI: mongodb://mongo:27017
+      MONGO_URI: mongodb://db-mongo.cologne.local:27017
       API_KEY: ${API_KEY}
       DB_PASSWORD: ${DB_PASSWORD}
     dns:
