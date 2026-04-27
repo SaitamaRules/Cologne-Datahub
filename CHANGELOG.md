@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-04-27
+
+### Added
+
+- BIND9 service authoritative for the `cologne.local` zone.
+  Configuration in `infra/bind9/`: `named.conf` (no recursion,
+  tight `allow-query` ACL), forward zone `db.cologne.local` and
+  reverse zone `db.172.28` covering the compose subnet.
+- Five A records for the project's services: `ns`, `db-pg`,
+  `db-mongo`, `api` and `proxy`. Matching PTR records in the
+  reverse zone enable `dig -x` lookups.
+- E2E CI step that asserts DNS resolution from inside the network
+  for four representative records (`api`, `db-pg`, `db-mongo` and
+  `proxy`), running `getent hosts` from the existing service
+  containers.
+- ADR-0008 documenting the choice of BIND9 over Docker's embedded
+  DNS, dnsmasq/CoreDNS and `extra_hosts` inline maps.
+
+### Changed
+
+- The compose network now declares a fixed subnet
+  (`172.28.0.0/24`) and every service receives a pinned
+  `ipv4_address`. The IPs in the BIND9 zone file reference these
+  exact addresses; the two files must be kept in sync manually.
+- Every service in the compose stack is configured with
+  `dns: 172.28.0.5`, making BIND9 their primary resolver. The
+  application, the proxy and the import jobs all use FQDNs from
+  `cologne.local` to reach their dependencies.
+- Nginx upstream `cologne_app` now resolves through BIND9 to
+  `api.cologne.local:8000`. The application's
+  `DB_HOST`/`MONGO_URI` environment variables now point at
+  `db-pg.cologne.local` and `db-mongo.cologne.local` respectively.
+- `.env.example` updated to document the new FQDN-based defaults.
+
 ## [0.9.0] - 2026-04-27
 
 ### Added
