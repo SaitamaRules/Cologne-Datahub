@@ -19,3 +19,6 @@ Thumbs.db
 # Build logs
 *.log
 build.log
+
+# Internal CA and server certificates (generated, never committed)
+infra/certs/out/
