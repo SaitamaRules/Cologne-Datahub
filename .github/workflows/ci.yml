@@ -100,7 +100,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   e2e:
-    name: End-to-end (proxy with TLS)
+    name: End-to-end (proxy with TLS and rate limiting)
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -235,6 +235,43 @@ jobs:
           fi
           echo "OK (TLS 1.0 rejected)"
           echo "::endgroup::"
+
+      # Burst test against the read endpoint. The reads_zone is rate-limited
+      # at 30 req/s with burst=60, so a 10-second wrk run with high
+      # concurrency should produce a clear majority of 429s. Tolerant
+      # threshold: at least 70% of responses must be non-2xx, which leaves
+      # plenty of margin for slow runners.
+      - name: Burst test — rate limiting on /api/trees
+        run: |
+          set -e
+
+          # wrk's exit code does not reflect HTTP statuses; we parse stdout.
+          output=$(docker run --rm --network host williamyeh/wrk \
+            -t2 -c20 -d10s --timeout 5s \
+            "https://127.0.0.1/api/trees?limit=1" 2>&1 || true)
+
+          echo "$output"
+
+          total=$(echo "$output" | grep -oE '[0-9]+ requests in' | grep -oE '[0-9]+')
+          rejected=$(echo "$output" | grep -oE 'Non-2xx or 3xx responses: [0-9]+' \
+            | grep -oE '[0-9]+$' || echo 0)
+
+          echo "total=$total rejected=$rejected"
+
+          # Compute rejection ratio as integer percentage (avoid bc dependency).
+          if [ "${total:-0}" -lt 100 ]; then
+            echo "Total requests too low to assert anything meaningful"
+            exit 1
+          fi
+          ratio=$(( rejected * 100 / total ))
+          echo "Rejection ratio: ${ratio}%"
+
+          # Anything below 70% suggests the rate limit is not effective.
+          if [ "$ratio" -lt 70 ]; then
+            echo "Rate limit appears ineffective (rejected only ${ratio}%)"
+            exit 1
+          fi
+          echo "OK (rejected ${ratio}% of ${total} requests)"
 
       - name: Dump logs on failure
         if: failure()
