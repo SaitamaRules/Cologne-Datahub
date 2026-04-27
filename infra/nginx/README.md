@@ -1,12 +1,13 @@
 # Nginx
 
 Reverse-proxy configuration used by the `nginx` service in the main
-compose stack. Terminates TLS for the application.
+compose stack. Terminates TLS for the application and applies L7 rate
+limiting.
 
 ## Layout
 
-- `nginx.conf` — top-level configuration. Defines the upstream, the
-  TLS configuration, the two virtual servers (port 80 redirector
+- `nginx.conf` — top-level configuration. Defines the upstream, TLS,
+  rate-limiting zones, the two virtual servers (port 80 redirector
   and port 443 main server), JSON access logs and the set of proxied
   routes.
 - `snippets/proxy.conf` — common `proxy_*` directives, included from
@@ -14,17 +15,21 @@ compose stack. Terminates TLS for the application.
 
 ## Routes
 
-All HTTPS unless noted otherwise.
+All HTTPS unless noted otherwise. Rate limits apply per client IP.
 
-| Path                 | Target           | Notes                                              |
-| -------------------- | ---------------- | -------------------------------------------------- |
-| `/api/*`             | app:8000         | Application API (PG + Mongo routers).              |
-| `/health`            | app:8000/health  | Liveness probe (proxied).                          |
-| `/health/ready`      | app:8000/ready   | Readiness probe (proxied).                         |
-| `/docs`              | app:8000/docs    | Swagger UI + OpenAPI JSON.                         |
-| `/nginx-health`      | (edge, plain HTTP) | Served by Nginx itself on port 80, 200 OK.       |
-| anything on port 80  | redirect 301     | All other traffic on 80 is redirected to 443.      |
-| everything else      | —                | `404` at the edge.                                 |
+| Path                 | Target           | Rate limit                | Notes                                                |
+| -------------------- | ---------------- | ------------------------- | ---------------------------------------------------- |
+| `GET /api/*`         | app:8000         | 30 req/s, burst 60        | Reads, including statistics endpoints.               |
+| `POST/PUT/DELETE /api/*` | app:8000     | 5 req/s, burst 10         | Writes, gated by API key.                            |
+| `/health`            | app:8000/health  | (no limit)                | Liveness probe (proxied).                            |
+| `/health/ready`      | app:8000/ready   | (no limit)                | Readiness probe (proxied).                           |
+| `/docs`              | app:8000/docs    | 2 req/s, burst 5          | Swagger UI + OpenAPI JSON.                           |
+| `/nginx-health`      | (edge, plain HTTP) | (no limit)              | Served by Nginx itself on port 80, 200 OK.           |
+| anything on port 80  | redirect 301     | —                         | All other traffic on 80 is redirected to 443.        |
+| everything else      | —                | —                         | `404` at the edge.                                   |
+
+A global cap of 20 simultaneous connections per IP applies on top of
+the request-rate limits.
 
 `/nginx-health` is the single exception that stays on plain HTTP.
 The Docker healthcheck for the Nginx container hits it on port 80
@@ -49,6 +54,17 @@ Posture summary:
 - HSTS: `max-age=31536000; includeSubDomains`. No `preload` because
   this is an internal hostname.
 
+## Rate limiting
+
+See [`RATE_LIMITS.md`](./RATE_LIMITS.md) for the full design rationale
+and load-test results. In short:
+
+- Limits are keyed on the client IP.
+- Burst requests are served immediately (`nodelay`), not queued.
+- When a limit is exceeded, the response is `429 Too Many Requests`
+  (per RFC 6585), not the Nginx default of 503.
+- Limited requests are logged at `warn` level in the error log.
+
 ## Request ID
 
 The proxy honours an incoming `X-Request-ID` header if the client
@@ -59,4 +75,5 @@ access logs of both layers.
 
 ## Future work
 
-- Phase 5 — L7 rate limiting (`limit_req_zone`, `limit_conn`).
+- Phase 7 — Place this service in a DMZ behind OPNsense, with the
+  application and databases in a separate LAN segment.

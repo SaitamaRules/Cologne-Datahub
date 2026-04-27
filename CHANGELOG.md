@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-04-27
+
+### Added
+
+- L7 rate limiting in Nginx with three request-rate zones and one
+  connection zone, keyed on the client IP:
+  - **Reads** (`GET /api/*`): 30 req/s, burst 60.
+  - **Writes** (`POST/PUT/DELETE /api/*`): 5 req/s, burst 10.
+  - **Docs** (`/docs`): 2 req/s, burst 5.
+  - **Connections**: 20 simultaneous per IP across all locations.
+- `infra/nginx/RATE_LIMITS.md` documenting the threat model, the
+  numeric justification of every limit, the behaviour on rejection,
+  and a full `wrk`-based load-test transcript demonstrating that the
+  reads zone allows exactly the documented budget (`30 req/s × 10 s
+  - burst 60 = 360` successful requests in a 10-second window).
+- E2E CI job extended with a burst test: runs `wrk` against
+  `/api/trees` and asserts that at least 70% of responses are
+  non-2xx/3xx, confirming the rate limiter is effective.
+- ADR-0007 documenting the choice of native Nginx rate limiting
+  over application-level limiting, third-party WAFs, and relying on
+  Phase 7 OPNsense controls alone.
+
+### Changed
+
+- Nginx returns `429 Too Many Requests` on rate-limit violations
+  instead of the default `503 Service Unavailable`. RFC 6585 reserves
+  503 for actual upstream unavailability.
+- Rate-limited requests are logged at `warn` level in the Nginx
+  error log, identifying client, zone, and path.
+- The `/api/` location now distinguishes read methods from write
+  methods through an internal rewrite to a non-public `/__write/`
+  location, so each method family can apply a different zone
+  without using `if` (which has known issues inside `location`
+  blocks).
+
 ## [0.8.0] - 2026-04-27
 
 ### Added
