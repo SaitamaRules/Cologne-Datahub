@@ -100,7 +100,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   e2e:
-    name: End-to-end (proxy with TLS and rate limiting)
+    name: End-to-end (DNS, TLS, rate limiting)
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -164,6 +164,42 @@ jobs:
           docker compose -f infra/docker-compose.yml --env-file .env ps
           docker compose -f infra/docker-compose.yml --env-file .env logs nginx --tail=100
           exit 1
+
+      # Verify BIND9 is serving the cologne.local zone correctly. The
+      # checks run from inside the existing service containers (app and
+      # nginx), which already have BIND9 configured as their resolver.
+      # No extra image needed; if these resolutions fail, the rest of
+      # the stack would already be broken.
+      - name: Verify internal DNS resolution
+        run: |
+          set -e
+          echo "::group::api.cologne.local from app"
+          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+            exec -T app sh -c "getent hosts api.cologne.local")
+          echo "$result"
+          echo "$result" | grep -q "172.28.0.20"
+          echo "::endgroup::"
+
+          echo "::group::db-pg.cologne.local from app"
+          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+            exec -T app sh -c "getent hosts db-pg.cologne.local")
+          echo "$result"
+          echo "$result" | grep -q "172.28.0.10"
+          echo "::endgroup::"
+
+          echo "::group::db-mongo.cologne.local from app"
+          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+            exec -T app sh -c "getent hosts db-mongo.cologne.local")
+          echo "$result"
+          echo "$result" | grep -q "172.28.0.11"
+          echo "::endgroup::"
+
+          echo "::group::proxy.cologne.local from nginx"
+          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+            exec -T nginx sh -c "getent hosts proxy.cologne.local")
+          echo "$result"
+          echo "$result" | grep -q "172.28.0.30"
+          echo "::endgroup::"
 
       - name: Probe the proxy over HTTPS
         env:
