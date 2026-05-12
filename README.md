@@ -84,8 +84,7 @@ Toda la documentación técnica de este repositorio está en inglés para manten
 
 📄 **[Ver Anteproyecto de Infraestructura (Notion)](https://cologne-datahub.notion.site/Cologne-Datahub-32dd13355df8804db043f28942998cc6?pvs=141)**
 
-### 🎬 Vídeo de presentación del checkpoint
+### 🎬 Vídeos de presentación
 
-Presentación de 4 minutos y medio del estado del proyecto en el checkpoint intermedio: fases completadas, demo en vivo de la API y hoja de ruta pendiente.
-
-📹 **[Ver vídeo (YouTube)](https://youtu.be/XPgJadHXoes)**
+- **Checkpoint #1** (abril 2026): [Ver vídeo (YouTube)](https://youtu.be/XPgJadHXoes) — fases 0-3, presentación inicial.
+- **Checkpoint #2** (mayo 2026): [Ver vídeo (YouTube)](https://youtu.be/jPhiLAbg6hs) — fases 4-6, TLS, rate limiting y DNS.
