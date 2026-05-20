@@ -1,0 +1,17 @@
+; Reverse zone for 192.168.113.0/24 (DMZ)
+;
+; PTR records point to canonical hostnames (the OS-level hostname of
+; each VM), not to service roles. This is the conventional practice
+; and avoids ambiguity when an IP hosts multiple roles.
+
+$TTL 600
+@   IN  SOA ns.cologne.local. admin.cologne.local. (
+                2026052001 ; serial: YYYYMMDDNN — bump on every edit
+                3600       ; refresh
+                900        ; retry
+                604800     ; expire
+                300        ; minimum
+)
+@                       IN  NS      ns.cologne.local.
+
+30                      IN  PTR     web.cologne.local.

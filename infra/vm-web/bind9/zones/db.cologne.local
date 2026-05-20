@@ -1,0 +1,30 @@
+; Forward zone for cologne.local
+;
+; VM hostnames (web/app/db) are the canonical names for each host.
+; Service roles (proxy/ns/api/db-pg/db-mongo) are additional A records
+; for application clarity. Postgres and Mongo share a host (vm-db) and
+; therefore share an IP; clients differentiate by port.
+
+$TTL 600
+@   IN  SOA ns.cologne.local. admin.cologne.local. (
+                2026052001 ; serial: YYYYMMDDNN — bump on every edit
+                3600       ; refresh
+                900        ; retry
+                604800     ; expire
+                300        ; minimum (negative cache TTL)
+)
+@                       IN  NS      ns.cologne.local.
+
+; Authoritative resolver
+ns                      IN  A       192.168.113.30
+
+; VM hostnames (canonical names)
+web                     IN  A       192.168.113.30
+app                     IN  A       10.10.10.20
+db                      IN  A       10.10.10.10
+
+; Service roles
+proxy                   IN  A       192.168.113.30
+api                     IN  A       10.10.10.20
+db-pg                   IN  A       10.10.10.10
+db-mongo                IN  A       10.10.10.10
