@@ -122,33 +122,33 @@ jobs:
       # script that ships with the project.
       - name: Generate ephemeral certificates
         run: |
-          docker run --rm -v "$PWD/infra/certs:/work" -w /work \
+          docker run --rm -v "$PWD/infra/dev-local/certs:/work" -w /work \
             --entrypoint sh alpine/openssl generate-certs.sh
-          ls -la infra/certs/out/
+          ls -la infra/dev-local/certs/out/
 
       - name: Build images
-        run: docker compose -f infra/docker-compose.yml --env-file .env build
+        run: docker compose -f infra/dev-local/docker-compose.yml --env-file .env build
 
       - name: Start the full stack
-        run: docker compose -f infra/docker-compose.yml --env-file .env up -d
+        run: docker compose -f infra/dev-local/docker-compose.yml --env-file .env up -d
 
       - name: Wait for stack to become healthy
         run: |
           for i in {1..60}; do
-            unhealthy=$(docker compose -f infra/docker-compose.yml --env-file .env ps \
+            unhealthy=$(docker compose -f infra/dev-local/docker-compose.yml --env-file .env ps \
               --format '{{.Service}}\t{{.Health}}' \
               | awk -F'\t' '$2 != "healthy" && $2 != "" { print $1 }')
             if [ -z "$unhealthy" ]; then
               echo "All services healthy after ${i}s"
-              docker compose -f infra/docker-compose.yml --env-file .env ps
+              docker compose -f infra/dev-local/docker-compose.yml --env-file .env ps
               exit 0
             fi
             echo "Still waiting on: $unhealthy"
             sleep 2
           done
           echo "Timeout waiting for services to become healthy"
-          docker compose -f infra/docker-compose.yml --env-file .env ps
-          docker compose -f infra/docker-compose.yml --env-file .env logs --tail=100
+          docker compose -f infra/dev-local/docker-compose.yml --env-file .env ps
+          docker compose -f infra/dev-local/docker-compose.yml --env-file .env logs --tail=100
           exit 1
 
       - name: Verify proxy ports are reachable
@@ -161,8 +161,8 @@ jobs:
             sleep 1
           done
           echo "Ports never opened"
-          docker compose -f infra/docker-compose.yml --env-file .env ps
-          docker compose -f infra/docker-compose.yml --env-file .env logs nginx --tail=100
+          docker compose -f infra/dev-local/docker-compose.yml --env-file .env ps
+          docker compose -f infra/dev-local/docker-compose.yml --env-file .env logs nginx --tail=100
           exit 1
 
       # Verify BIND9 is serving the cologne.local zone correctly. The
@@ -174,28 +174,28 @@ jobs:
         run: |
           set -e
           echo "::group::api.cologne.local from app"
-          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+          result=$(docker compose -f infra/dev-local/docker-compose.yml --env-file .env \
             exec -T app sh -c "getent hosts api.cologne.local")
           echo "$result"
           echo "$result" | grep -q "172.28.0.20"
           echo "::endgroup::"
 
           echo "::group::db-pg.cologne.local from app"
-          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+          result=$(docker compose -f infra/dev-local/docker-compose.yml --env-file .env \
             exec -T app sh -c "getent hosts db-pg.cologne.local")
           echo "$result"
           echo "$result" | grep -q "172.28.0.10"
           echo "::endgroup::"
 
           echo "::group::db-mongo.cologne.local from app"
-          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+          result=$(docker compose -f infra/dev-local/docker-compose.yml --env-file .env \
             exec -T app sh -c "getent hosts db-mongo.cologne.local")
           echo "$result"
           echo "$result" | grep -q "172.28.0.11"
           echo "::endgroup::"
 
           echo "::group::proxy.cologne.local from nginx"
-          result=$(docker compose -f infra/docker-compose.yml --env-file .env \
+          result=$(docker compose -f infra/dev-local/docker-compose.yml --env-file .env \
             exec -T nginx sh -c "getent hosts proxy.cologne.local")
           echo "$result"
           echo "$result" | grep -q "172.28.0.30"
@@ -203,7 +203,7 @@ jobs:
 
       - name: Probe the proxy over HTTPS
         env:
-          CACERT: infra/certs/out/ca.crt
+          CACERT: infra/dev-local/certs/out/ca.crt
         run: |
           set -e
 
@@ -311,8 +311,8 @@ jobs:
 
       - name: Dump logs on failure
         if: failure()
-        run: docker compose -f infra/docker-compose.yml --env-file .env logs --tail=200
+        run: docker compose -f infra/dev-local/docker-compose.yml --env-file .env logs --tail=200
 
       - name: Tear down the stack
         if: always()
-        run: docker compose -f infra/docker-compose.yml --env-file .env down -v
+        run: docker compose -f infra/dev-local/docker-compose.yml --env-file .env down -v

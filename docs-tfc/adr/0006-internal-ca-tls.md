@@ -43,7 +43,7 @@ records how certificates are issued for the project and why.
 
 Chosen option: "**Option A — Internal CA**". A root CA is generated
 once and used to sign a server certificate for the project. Both live
-in `infra/certs/out/` (gitignored), produced by a versioned shell
+in `infra/dev-local/certs/out/` (gitignored), produced by a versioned shell
 script that runs inside an `alpine/openssl` container.
 
 The CA is valid for ten years, the server certificate too. Both
@@ -127,11 +127,11 @@ Phase 10 rather than something I want to hit during the defence.
 
 ## Links
 
-- `infra/certs/openssl.cnf` — versioned OpenSSL configuration.
-- `infra/certs/generate-certs.sh` — generation script.
-- `infra/certs/README.md` — usage instructions, trust setup,
+- `infra/dev-local/certs/openssl.cnf` — versioned OpenSSL configuration.
+- `infra/dev-local/certs/generate-certs.sh` — generation script.
+- `infra/dev-local/certs/README.md` — usage instructions, trust setup,
   rotation procedure.
-- `infra/nginx/nginx.conf` — TLS configuration in the proxy.
+- `infra/dev-local/nginx/nginx.conf` — TLS configuration in the proxy.
 - `.github/workflows/ci.yml` — `e2e` job that generates ephemeral
   certificates and probes the proxy over HTTPS.
 - ADR-0005 (Nginx as the reverse proxy).

@@ -70,10 +70,10 @@ docker run --rm -v "$PWD/app:/app" -w /app \
   run --allow-net --allow-write scripts/fetch_data.ts
 
 # 2. Import into both databases (profile-gated services)
-docker compose -f infra/docker-compose.yml --env-file .env \
+docker compose -f infra/dev-local/docker-compose.yml --env-file .env \
   --profile import run --rm import-pg
 
-docker compose -f infra/docker-compose.yml --env-file .env \
+docker compose -f infra/dev-local/docker-compose.yml --env-file .env \
   --profile import run --rm import-mongo
 ```
 

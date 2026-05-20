@@ -60,7 +60,7 @@ RFC 6585) and are logged at `warn` level.
 
 The full policy table, justification of each numeric value, threat
 model and load-test evidence live in
-[`infra/nginx/RATE_LIMITS.md`](../../infra/nginx/RATE_LIMITS.md).
+[`infra/dev-local/nginx/RATE_LIMITS.md`](../../infra/dev-local/nginx/RATE_LIMITS.md).
 
 ### Positive Consequences
 
@@ -145,8 +145,8 @@ model and load-test evidence live in
 
 ## Links
 
-- `infra/nginx/nginx.conf` — zones and directives.
-- `infra/nginx/RATE_LIMITS.md` — policies, justification and
+- `infra/dev-local/nginx/nginx.conf` — zones and directives.
+- `infra/dev-local/nginx/RATE_LIMITS.md` — policies, justification and
   load-test evidence.
 - `.github/workflows/ci.yml` — e2e job's burst-test step.
 - ADR-0005 (Nginx as the reverse proxy).

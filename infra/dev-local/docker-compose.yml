@@ -1,4 +1,7 @@
-# Compose stack for Cologne DataHub.
+# Single-host development stack for Cologne DataHub.
+# See ./README.md for the full context on when to use this vs the
+# per-VM stacks under infra/vm-{web,app,db}/.
+#
 # Invoked from the repository root via the root Makefile (make up / make down).
 #
 # Networks:
@@ -52,7 +55,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ../app/queries/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../app/queries/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       default:
         ipv4_address: 172.28.0.10
@@ -84,7 +87,7 @@ services:
 
   app:
     build:
-      context: ../app
+      context: ../../app
     image: cologne-datahub:dev
     restart: unless-stopped
     depends_on:
@@ -145,8 +148,8 @@ services:
       start_period: 15s
 
   # One-shot data loaders. Not started by default.
-  # Use:  docker compose -f infra/docker-compose.yml --profile import run --rm import-pg
-  #       docker compose -f infra/docker-compose.yml --profile import run --rm import-mongo
+  # Use:  docker compose -f infra/dev-local/docker-compose.yml --profile import run --rm import-pg
+  #       docker compose -f infra/dev-local/docker-compose.yml --profile import run --rm import-mongo
   #
   # Both require app/data/baumkataster.json to exist on the host.
   # Fetch it beforehand with:  make fetch-data
@@ -169,8 +172,8 @@ services:
     dns:
       - 172.28.0.5
     volumes:
-      - ../app/scripts:/app/scripts:ro
-      - ../app/data:/app/data:ro
+      - ../../app/scripts:/app/scripts:ro
+      - ../../app/data:/app/data:ro
     command:
       - "deno"
       - "run"
@@ -194,8 +197,8 @@ services:
     dns:
       - 172.28.0.5
     volumes:
-      - ../app/scripts:/app/scripts:ro
-      - ../app/data:/app/data:ro
+      - ../../app/scripts:/app/scripts:ro
+      - ../../app/data:/app/data:ro
     command:
       - "deno"
       - "run"

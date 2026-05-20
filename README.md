@@ -31,22 +31,22 @@ docker run --rm -v "$PWD/infra/certs:/work" -w /work \
     --entrypoint sh alpine/openssl generate-certs.sh
 
 # Bring up the stack.
-docker compose -f infra/docker-compose.yml --env-file .env up -d --build
+docker compose -f infra/dev-local/docker-compose.yml --env-file .env up -d --build
 ```
 
 The API is reachable through the Nginx proxy. HTTP redirects to HTTPS; the certificate is signed by the internal CA you just generated, so pass it to `curl` with `--cacert`:
 
 ```bash
-curl --cacert infra/certs/out/ca.crt https://localhost/health
-curl --cacert infra/certs/out/ca.crt https://localhost/health/ready
-curl --cacert infra/certs/out/ca.crt "https://localhost/api/trees?limit=3"   # After seeding data
+curl --cacert infra/dev-local/certs/out/ca.crt https://localhost/health
+curl --cacert infra/dev-local/certs/out/ca.crt https://localhost/health/ready
+curl --cacert infra/dev-local/certs/out/ca.crt "https://localhost/api/trees?limit=3"   # After seeding data
 ```
 
 Interactive API docs (Swagger UI): <https://localhost/docs>
 
-To stop: `docker compose -f infra/docker-compose.yml --env-file .env down`
+To stop: `docker compose -f infra/dev-local/docker-compose.yml --env-file .env down`
 
-Seeding real data from the Cologne WFS, running tests against ephemeral databases, and trusting the CA system-wide are documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`infra/certs/README.md`](infra/certs/README.md).
+Seeding real data from the Cologne WFS, running tests against ephemeral databases, and trusting the CA system-wide are documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`infra/dev-local/certs/README.md`](infra/dev-local/certs/README.md).
 
 ## Documentation map
 
@@ -56,7 +56,7 @@ Seeding real data from the Cologne WFS, running tests against ephemeral database
 - **[Bibliography](docs/BIBLIOGRAPHY.md)** — data sources, tooling, standards.
 - **[Changelog](CHANGELOG.md)** — versioned history of every change.
 - **[Architecture Decision Records](docs-tfc/adr/)** — why each major choice was made.
-- **Subsystem docs:** [Nginx](infra/nginx/README.md) · [Rate limits](infra/nginx/RATE_LIMITS.md) · [Internal CA](infra/certs/README.md) · [BIND9](infra/bind9/README.md)
+- **Subsystem docs:** [Nginx](infra/dev-local/nginx/README.md) · [Rate limits](infra/dev-local/nginx/RATE_LIMITS.md) · [Internal CA](infra/dev-local/certs/README.md) · [BIND9](infra/dev-local/bind9/README.md)
 
 ## Continuous Integration
 

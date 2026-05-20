@@ -117,8 +117,8 @@ phases is either built in or reachable via a one-line directive.
 
 ## Links
 
-- `infra/nginx/nginx.conf` — top-level proxy configuration.
-- `infra/nginx/snippets/proxy.conf` — shared proxy directives.
-- `infra/docker-compose.yml` — compose definition for the proxy service.
+- `infra/dev-local/nginx/nginx.conf` — top-level proxy configuration.
+- `infra/dev-local/nginx/snippets/proxy.conf` — shared proxy directives.
+- `infra/dev-local/docker-compose.yml` — compose definition for the proxy service.
 - `.github/workflows/ci.yml` — e2e job exercising the proxy in CI.
 - ADR-0002 (runtime), ADR-0003 (framework), ADR-0004 (databases).
