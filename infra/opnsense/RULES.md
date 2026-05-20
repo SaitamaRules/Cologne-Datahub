@@ -51,6 +51,7 @@ the perspective of the OPNsense interface the traffic enters through.
 | DMZ net (113.0/24) | 10.10.10.20:8000/tcp     | **allow** | Nginx → API                    |
 | DMZ net            | 192.168.113.1:53 udp/tcp | **allow** | BIND9 → Unbound forwarder      |
 | DMZ net            | WAN net :80,443 tcp      | **allow** | apt + Docker pulls             |
+| DMZ net            | any ICMP                 | **allow** | diagnostics + ARP keepalive    |
 | DMZ net            | any (anything else)      | **deny**  | explicit default-deny          |
 
 DMZ is the zone exposed via WAN DNAT; everything not strictly needed
