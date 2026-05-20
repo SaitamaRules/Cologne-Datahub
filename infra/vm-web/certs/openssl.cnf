@@ -1,0 +1,39 @@
+# OpenSSL configuration for the Phase 7 vm-web server certificate.
+#
+# Subject Alternative Names cover the three legitimate access paths:
+#   - datahub.cologne.local: the FQDN used by external clients
+#     (Windows host) once OPNsense DNATs WAN:443 to DMZ:443.
+#   - proxy.cologne.local:   the FQDN used by internal clients (any
+#     host inside DMZ or LAN) resolving via BIND9.
+#   - web.cologne.local:     the OS-level hostname of vm-web; useful
+#     for direct probes from the host itself.
+#   - localhost / 127.0.0.1: kept for in-container healthchecks and
+#     local debugging.
+#
+# The CA that signs this certificate is reused across server cert
+# rotations (see generate-certs.sh). The CA private key is generated
+# 4096-bit RSA and valid 10 years; the server key is 2048-bit RSA
+# valid 10 years.
+
+[req]
+distinguished_name = req_distinguished_name
+req_extensions     = v3_req
+prompt             = no
+
+[req_distinguished_name]
+CN = proxy.cologne.local
+O  = Cologne DataHub
+OU = TFC ASIR Phase 7
+
+[v3_req]
+basicConstraints   = CA:FALSE
+keyUsage           = digitalSignature, keyEncipherment
+extendedKeyUsage   = serverAuth
+subjectAltName     = @alt_names
+
+[alt_names]
+DNS.1 = datahub.cologne.local
+DNS.2 = proxy.cologne.local
+DNS.3 = web.cologne.local
+DNS.4 = localhost
+IP.1  = 127.0.0.1
