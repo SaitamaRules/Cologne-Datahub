@@ -11,7 +11,7 @@ The TFC is organised in 10 phases. Each closed phase is marked with an annotated
 | 4     | TLS with internal CA                | `v0.8.0`  | ✅ Done        |
 | 5     | Rate limiting (L7)                  | `v0.9.0`  | ✅ Done        |
 | 6     | Internal DNS (BIND9)                | `v0.10.0` | ✅ Done        |
-| 7     | OPNsense perimeter (DMZ + LAN)      | —         | 🟡 In progress |
+| 7     | OPNsense perimeter (DMZ + LAN)      | `v0.11.0` | ✅ Done        |
 | 8     | Automated backups                   | —         | ⏳ Pending     |
 | 9     | Monitoring (Python stdlib)          | —         | ⏳ Pending     |
 | 10    | Memoria and defence                 | —         | ⏳ Pending     |
@@ -47,16 +47,18 @@ Native Nginx rate limiting applied per route family. Three request-rate zones (r
 A BIND9 service is added to the compose stack, authoritative for the `cologne.local` zone. The compose network is pinned to a fixed subnet (`172.28.0.0/24`) with each service receiving a stable IP, referenced by name from the BIND9 zone file. Inter-service communication now goes through FQDNs: Nginx upstreams the app via `api.cologne.local:8000`, and the application reaches the databases through `db-pg.cologne.local:5432` and `mongodb://db-mongo.cologne.local:27017`. No service references a compose service name any more, which is the prerequisite for the LAN/DMZ split coming in Phase 7. The BIND9 server is authoritative-only with no recursion and a tight `allow-query` ACL.
 The CI E2E job verifies DNS resolution from inside the network for four representative records. ADR-0008 documents the choice of BIND9 over Docker's embedded DNS, dnsmasq/CoreDNS, and `extra_hosts` inline.
 
-## Upcoming phases
-
 ### Phase 7 — OPNsense perimeter
 
-The stack is deployed across three Ubuntu Server VMs in VMware Workstation, sitting behind an OPNsense firewall:
+The stack is deployed across three Ubuntu Server 26.04 VMs in VMware Workstation, behind an OPNsense firewall with three interfaces (WAN on VMware NAT, DMZ and LAN on host-only networks):
 
-- **DMZ** (`192.168.113.0/24`): Nginx + BIND9.
-- **LAN** (`10.10.10.0/24`): app + Postgres + Mongo + the Python monitor (Phase 9).
+- **DMZ** (`192.168.113.0/24`): `vm-web` running Nginx + BIND9.
+- **LAN** (`10.10.10.0/24`): `vm-app` running the Deno API, `vm-db` running PostgreSQL + MongoDB.
 
-Firewall policy is explicit: WAN → DMZ only on 443/tcp; DMZ → LAN only on the database ports and only from the app's IP; LAN → WAN via NAT. `nmap` sweeps from each segment validate the policy. State table limits and SYN flood protection at L3/L4 complement the L7 rate limiting from Phase 5. ADR-0007 documents the choice of OPNsense over pfSense.
+Each host carries its own Compose file under `infra/vm-{web,app,db}/`; the original single-host stack is archived as `infra/dev-local/` and remains the development and CI environment. BIND9 is reconfigured authoritative for the lab's physical IPs and forwards external names to OPNsense's Unbound, the single DNS egress. The server certificate is rotated with new SANs (`datahub.cologne.local`, `proxy.cologne.local`, `web.cologne.local`) signed by the reused internal CA.
+
+Firewall policy is default-deny on WAN and DMZ: the only externally reachable surface is 443/tcp, DNATed to Nginx; DMZ → LAN is limited to the API port; the data tier is unreachable from DMZ. LAN is the trusted admin zone, with defence-in-depth provided by per-host UFW (service-specific allows), `fail2ban` on SSH and `auditd`. L3/L4 state-table limits complement the Phase 5 L7 rate limiting. The posture is documented in `infra/opnsense/RULES.md` and verified by `nmap` sweeps from three vantage points in `infra/opnsense/NMAP.md`. ADR-0009 documents the choice of OPNsense over pfSense CE, VyOS and hand-rolled nftables.
+
+## Upcoming phases
 
 ### Phase 8 — Automated backups
 
@@ -64,7 +66,7 @@ Firewall policy is explicit: WAN → DMZ only on 443/tcp; DMZ → LAN only on th
 
 ### Phase 9 — Monitoring daemon
 
-A small Python daemon written against the standard library only — no external dependencies. It queries `/var/run/docker.sock` via `http.client` to enumerate containers, pings TCP ports with `socket`, holds state in memory to emit alerts only on `up ↔ down` transitions, and sends those alerts via Telegram using `urllib.request`. Runs as a containerised service in the LAN segment. ADR-0008 documents why the standard library suffices over a Prometheus/Grafana stack for this scale.
+A small Python daemon written against the standard library only — no external dependencies. It queries `/var/run/docker.sock` via `http.client` to enumerate containers, pings TCP ports with `socket`, holds state in memory to emit alerts only on `up ↔ down` transitions, and sends those alerts via Telegram using `urllib.request`. Runs as a containerised service in the LAN segment. A dedicated ADR will document why the standard library suffices over a Prometheus/Grafana stack for this scale.
 
 ### Phase 10 — Memoria and defence
 

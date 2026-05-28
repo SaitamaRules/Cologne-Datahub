@@ -78,11 +78,14 @@ Cologne-Datahub/
 ├── docs/                   # User-facing documentation
 ├── docs-tfc/
 │   ├── DIARY.md            # Erasmus+ journal
-│   └── adr/                # Architecture Decision Records
+│   └── adr/                # Architecture Decision Records (0001–0009)
 ├── infra/
-│   ├── docker-compose.yml
-│   ├── docker-compose.test.yml
-│   └── nginx/
+│   ├── dev-local/          # single-host stack (compose + bind9 + nginx + certs)
+│   ├── vm-web/             # DMZ host: bind9 + nginx + certs + compose
+│   ├── vm-app/             # LAN host: Deno API compose
+│   ├── vm-db/              # LAN host: Postgres + Mongo compose
+│   ├── opnsense/           # firewall posture: RULES.md + NMAP.md
+│   └── docker-compose.test.yml
 ├── .github/workflows/ci.yml
 ├── CHANGELOG.md
 └── README.md
