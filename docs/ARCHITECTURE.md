@@ -2,14 +2,43 @@
 
 ## Current stack
 
-```
-Client  ──HTTP──▶  Nginx (:80)  ──▶  app (Deno + Hono, :8000)  ──▶  PostgreSQL
-                                                              └──▶  MongoDB
+Two deployment modes share the same application code:
+
+- **dev-local** — the whole stack on a single Docker host, for development and CI. See [`infra/dev-local/`](../infra/dev-local/).
+- **Phase 7 lab** — the stack segmented across three Ubuntu Server VMs behind an OPNsense firewall (DMZ + LAN). This is the production-like deployment.
+
+### Phase 7 network topology
+
+```mermaid
+flowchart TB
+    client["External client<br/>(admin host)"]
+
+    subgraph wanzone["WAN · vmnet8 NAT · 192.168.67.0/24"]
+        fw["OPNsense firewall<br/>WAN · DMZ · LAN<br/>Unbound resolver"]
+    end
+
+    subgraph dmz["DMZ · 192.168.113.0/24"]
+        web["vm-web · .30<br/>Nginx :80/:443<br/>BIND9 :53"]
+    end
+
+    subgraph lan["LAN · 10.10.10.0/24"]
+        app["vm-app · .20<br/>Deno API :8000"]
+        db["vm-db · .10<br/>PostgreSQL :5432<br/>MongoDB :27017"]
+    end
+
+    client -->|HTTPS 443| fw
+    fw -->|DNAT 443| web
+    web -->|proxy 8000| app
+    app -->|5432 / 27017| db
+
+    app -.DNS 53.-> web
+    db -.DNS 53.-> web
+    web -.DNS forward.-> fw
 ```
 
-Only port 80 is published to the host (bound to `127.0.0.1`, not `0.0.0.0`). The application and both databases are only reachable from inside the Docker network.
+Solid arrows are application traffic; dashed arrows are DNS. The only externally reachable port is 443 (DNATed to Nginx on vm-web). DMZ → LAN is restricted to the API port; LAN → DMZ is restricted to DNS. The full flow matrix and the verification scans are in [`infra/opnsense/RULES.md`](../infra/opnsense/RULES.md) and [`infra/opnsense/NMAP.md`](../infra/opnsense/NMAP.md).
 
-This topology is deliberately modest at this stage. Subsequent phases of the TFC add TLS termination (Phase 4), L7 rate limiting (Phase 5), internal DNS (Phase 6) and segment the whole system across DMZ and LAN VMs behind OPNsense (Phase 7). See [ROADMAP](ROADMAP.md).
+Earlier phases built up to this topology: TLS termination (Phase 4), L7 rate limiting (Phase 5), internal DNS (Phase 6) and full segmentation across DMZ and LAN behind OPNsense (Phase 7). See [ROADMAP](ROADMAP.md).
 
 ## Why two databases?
 
