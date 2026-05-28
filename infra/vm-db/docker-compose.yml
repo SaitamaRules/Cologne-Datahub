@@ -8,7 +8,9 @@
 # but routing all DNS through BIND9 keeps the monitoring story simple
 # in Phase 9.
 #
-# Backups live in this host and are added in Phase 8.
+# Backups (Phase 8) run on this host: a `backup` helper container holds
+# the dump tooling and Ofelia triggers it on a daily schedule. Archives
+# land in ./backups (gitignored).
 
 name: cologne-datahub-db
 
@@ -49,6 +51,49 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  # --- Phase 8: automated backups -------------------------------------------
+  # Holds pg_dump/pg_restore + mongodump/mongorestore + curl. Idles; Ofelia
+  # execs backup.sh on schedule. Secrets come from .env; non-secret wiring
+  # (hostnames, retention) is declared here so it stays visible in git.
+  backup:
+    build: ./backup
+    image: cologne-datahub-backup:1.0
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PG_HOST: postgres
+      MONGO_URI: mongodb://mongo:27017
+      OPNSENSE_HOST: 10.10.10.1
+      KEEP_DAILY: "7"
+      KEEP_WEEKLY: "4"
+    volumes:
+      - ./backups:/backups
+    dns:
+      - 192.168.113.30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    command: ["tail", "-f", "/dev/null"]
+    labels:
+      ofelia.enabled: "true"
+      # cron with seconds field: sec min hour dom mon dow -> 03:00:00 daily
+      ofelia.job-exec.daily-backup.schedule: "0 0 3 * * *"
+      ofelia.job-exec.daily-backup.command: "/usr/local/bin/backup.sh"
+
+  # Low-footprint job scheduler. Reads schedules from container labels.
+  ofelia:
+    image: mcuadros/ofelia:0.3.22
+    restart: unless-stopped
+    depends_on:
+      - backup
+    command: daemon --docker
+    environment:
+      TZ: Europe/Berlin   # switch to Europe/Madrid after returning to Spain
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
 volumes:
   pg_data:

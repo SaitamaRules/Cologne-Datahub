@@ -12,7 +12,7 @@ The TFC is organised in 10 phases. Each closed phase is marked with an annotated
 | 5     | Rate limiting (L7)                  | `v0.9.0`  | ✅ Done        |
 | 6     | Internal DNS (BIND9)                | `v0.10.0` | ✅ Done        |
 | 7     | OPNsense perimeter (DMZ + LAN)      | `v0.11.0` | ✅ Done        |
-| 8     | Automated backups                   | —         | ⏳ Pending     |
+| 8     | Automated backups                   | `v0.12.0` | ✅ Done        |
 | 9     | Monitoring (Python stdlib)          | —         | ⏳ Pending     |
 | 10    | Memoria and defence                 | —         | ⏳ Pending     |
 
@@ -58,11 +58,11 @@ Each host carries its own Compose file under `infra/vm-{web,app,db}/`; the origi
 
 Firewall policy is default-deny on WAN and DMZ: the only externally reachable surface is 443/tcp, DNATed to Nginx; DMZ → LAN is limited to the API port; the data tier is unreachable from DMZ. LAN is the trusted admin zone, with defence-in-depth provided by per-host UFW (service-specific allows), `fail2ban` on SSH and `auditd`. L3/L4 state-table limits complement the Phase 5 L7 rate limiting. The posture is documented in `infra/opnsense/RULES.md` and verified by `nmap` sweeps from three vantage points in `infra/opnsense/NMAP.md`. ADR-0009 documents the choice of OPNsense over pfSense CE, VyOS and hand-rolled nftables.
 
-## Upcoming phases
-
 ### Phase 8 — Automated backups
 
-`scripts/backup.sh` performs `pg_dump` + `mongodump`, compresses them, and rotates with a 7-daily + 4-weekly policy. Scheduled by cron in the LAN host (or an `ofelia` sidecar). `scripts/restore.sh` is the symmetric counterpart. A real restore is performed and documented as evidence.
+Both databases on `vm-db` are backed up by a dedicated `backup` helper container (PostgreSQL 16 client + MongoDB Database Tools + curl) under `infra/vm-db/backup/`. `backup.sh` runs `pg_dump` (custom format) and `mongodump` (gzipped archive) and additionally pulls the OPNsense running configuration through its REST API — treating the firewall config as data, as promised in Phase 7 — bundling all three into one timestamped `tar.gz`. Retention is 7 daily plus 4 weekly, the weekly copy promoted on Sundays. Scheduling is handled by an Ofelia sidecar (`mcuadros/ofelia`) that reads the daily 03:00 schedule from container labels, so the cadence is versioned in the compose file rather than in an out-of-band host crontab. `restore.sh` is the symmetric, manual counterpart (`pg_restore --clean`, `mongorestore --drop`); the rehearsed restore procedure is captured in the Phase 10 runbook. Backups are stored locally on the host; off-host replication (3-2-1) and at-rest encryption were deliberately left out of scope for this phase. ADR-0010 documents the choice of an Ofelia sidecar over host cron, pgBackRest and a managed off-host service.
+
+## Upcoming phases
 
 ### Phase 9 — Monitoring daemon
 
