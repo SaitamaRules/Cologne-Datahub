@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-28
+
+### Added
+
+- Automated backup tooling on `vm-db`: a purpose-built `backup` helper
+  image (PostgreSQL 16 client + MongoDB Database Tools 100.17.0 +
+  curl) under `infra/vm-db/backup/`, holding `backup.sh` and
+  `restore.sh`.
+- `backup.sh` dumps PostgreSQL (`pg_dump`, custom format) and MongoDB
+  (`mongodump`, gzipped archive) and pulls the OPNsense running
+  configuration through its REST API (best-effort), bundling all three
+  into a single timestamped `tar.gz`. Retention is 7 daily plus 4
+  weekly, with the weekly snapshot promoted from the daily set on
+  Sundays.
+- `restore.sh`, the symmetric counterpart: a manual, destructive
+  restore of a chosen archive (`pg_restore --clean --if-exists`,
+  `mongorestore --drop`).
+- Ofelia (`mcuadros/ofelia:0.3.22`) sidecar scheduling the daily
+  backup at 03:00 via container labels (`job-exec`), so the cadence is
+  versioned in the compose file rather than in an out-of-band host
+  crontab.
+- ADR-0010 documenting the choice of an Ofelia sidecar over host cron,
+  a dedicated backup framework (pgBackRest) and a managed off-host
+  service.
+
+### Changed
+
+- `infra/vm-db/docker-compose.yml` extended with the `backup` and
+  `ofelia` services; the existing `postgres` and `mongo` services are
+  unchanged. The `backup` container reads database credentials from
+  the existing host `.env` via `env_file`, keeping secrets out of git.
+- `.env.example` documents the optional `OPNSENSE_API_KEY` /
+  `OPNSENSE_API_SECRET` variables that enable the firewall-config
+  pull.
+
+### Security
+
+- When enabled, the OPNsense configuration pull uses a dedicated
+  read-only API account limited to the "Configuration History"
+  privilege. The pull is best-effort and never aborts the database
+  backup.
+- Local backup artifacts (`infra/vm-db/backups/`) are gitignored and
+  never committed.
+
 ## [0.11.0] - 2026-05-28
 
 ### Added
