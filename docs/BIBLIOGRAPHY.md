@@ -28,6 +28,9 @@
 - **Nginx** — Official documentation. <https://nginx.org/en/docs/>
 - **Docker** — Engine and Compose documentation. <https://docs.docker.com/>
 - **OpenSSL** — Cookbook (Ivan Ristić). <https://www.feistyduck.com/library/openssl-cookbook/>
+- **BIND9** — ISC BIND 9 Administrator Reference Manual. <https://bind9.readthedocs.io/>
+- **OPNsense** — Official documentation. <https://docs.opnsense.org/>
+- **Ubuntu Server** — Official documentation. <https://documentation.ubuntu.com/server/>
 
 ## Standards and conventions
 

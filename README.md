@@ -12,7 +12,7 @@ It takes the REST API I built at the ZfL (University of Cologne) — serving pub
 
 ## Status
 
-**7 of 10 phases completed.** The latest release covers internal DNS with BIND9, on top of the proxy with TLS and L7 rate limiting from previous phases. Remaining phases tackle the OPNsense perimeter (DMZ/LAN split), automated backups, monitoring and the final report.
+**8 of 10 phases completed.** The latest release adds the OPNsense perimeter: the stack now runs across three VMs split into DMZ and LAN behind a firewall, on top of the internal DNS, TLS and L7 rate limiting from previous phases. Remaining phases tackle automated backups, monitoring and the final report.
 
 Full breakdown in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -27,7 +27,7 @@ cp .env.example .env
 # Edit .env — set DB_PASSWORD and API_KEY to your own values.
 
 # Generate the internal CA and server certificate (one-off, ~5 seconds).
-docker run --rm -v "$PWD/infra/certs:/work" -w /work \
+docker run --rm -v "$PWD/infra/dev-local/certs:/work" -w /work \
     --entrypoint sh alpine/openssl generate-certs.sh
 
 # Bring up the stack.
