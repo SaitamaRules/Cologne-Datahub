@@ -1,0 +1,99 @@
+# vm-app — LAN host stack (Deno API only).
+#
+# A single service: the Deno/Hono application. Both BIND9 (on vm-web)
+# and PostgreSQL/MongoDB (on vm-db) live on other hosts, reached
+# through OPNsense.
+#
+# DNS: the container points at BIND9 on vm-web (192.168.113.30) for
+# every resolution, including the db-pg/db-mongo FQDNs that resolve
+# to vm-db on the LAN. The DMZ <-> LAN firewall rule for port 53
+# (sub-phase C.9) is what makes this possible.
+#
+# No depends_on: dependencies are remote. Bring-up order is enforced
+# operationally (vm-db -> vm-app -> vm-web). If the DB or DNS is not
+# reachable at startup, the container restarts until it is, thanks
+# to restart: unless-stopped.
+
+name: cologne-datahub-app
+
+services:
+  app:
+    build:
+      context: ../../app
+    image: cologne-datahub:dev
+    restart: unless-stopped
+    environment:
+      DB_HOST: db-pg.cologne.local
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MONGO_URI: mongodb://db-mongo.cologne.local:27017
+      API_KEY: ${API_KEY}
+      PORT: "8000"
+    ports:
+      - "8000:8000"
+    dns:
+      - 192.168.113.30
+    healthcheck:
+      test:
+        - "CMD"
+        - "deno"
+        - "eval"
+        - "const r = await fetch('http://localhost:8000/health'); if (r.status !== 200) Deno.exit(1);"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # One-shot data loaders. Not started by default.
+  # Use:
+  #   docker compose -f infra/vm-app/docker-compose.yml --profile import run --rm import-pg
+  #   docker compose -f infra/vm-app/docker-compose.yml --profile import run --rm import-mongo
+  #
+  # Both require app/data/baumkataster.json to exist on this host.
+  # Fetch it beforehand from inside the repo:
+  #   cd app && deno run --allow-net --allow-write scripts/fetch_data.ts
+
+  import-pg:
+    profiles: ["import"]
+    image: cologne-datahub:dev
+    environment:
+      DB_HOST: db-pg.cologne.local
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      API_KEY: ${API_KEY}
+    dns:
+      - 192.168.113.30
+    volumes:
+      - ../../app/scripts:/app/scripts:ro
+      - ../../app/data:/app/data:ro
+    command:
+      - "deno"
+      - "run"
+      - "--allow-read=/app"
+      - "--allow-net"
+      - "--allow-env"
+      - "scripts/import_pg.ts"
+
+  import-mongo:
+    profiles: ["import"]
+    image: cologne-datahub:dev
+    environment:
+      MONGO_URI: mongodb://db-mongo.cologne.local:27017
+      API_KEY: ${API_KEY}
+      DB_PASSWORD: ${DB_PASSWORD}
+    dns:
+      - 192.168.113.30
+    volumes:
+      - ../../app/scripts:/app/scripts:ro
+      - ../../app/data:/app/data:ro
+    command:
+      - "deno"
+      - "run"
+      - "--allow-read=/app"
+      - "--allow-net"
+      - "--allow-env"
+      - "scripts/import_mongo.ts"

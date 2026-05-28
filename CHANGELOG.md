@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-05-28
+
+### Added
+
+- Per-VM deployment layout for the DMZ/LAN topology:
+  `infra/vm-web/` (Nginx + BIND9, DMZ), `infra/vm-app/` (Deno API,
+  LAN) and `infra/vm-db/` (PostgreSQL + MongoDB, LAN), each with its
+  own `docker-compose.yml` and README.
+- `infra/opnsense/` documentation layer: `RULES.md` (flow matrix,
+  NAT and per-interface rules mirroring the running firewall) and
+  `NMAP.md` (verification scans from three vantage points, zero
+  deviations from the declared posture).
+- Two reverse zones in BIND9 for the lab segments
+  (`113.168.192.in-addr.arpa` and `10.10.10.in-addr.arpa`) replacing
+  the single compose-subnet reverse zone.
+- Server certificate SANs for the Phase 7 access paths
+  (`datahub.cologne.local`, `proxy.cologne.local`,
+  `web.cologne.local`) signed by the reused internal CA.
+- Phase 7 network topology diagram (Mermaid) in
+  `docs/ARCHITECTURE.md`.
+- ADR-0009 documenting the choice of OPNsense over pfSense CE, VyOS
+  and hand-rolled nftables.
+
+### Changed
+
+- The monolithic single-host stack moved to `infra/dev-local/`
+  (compose, bind9, nginx, certs) and is preserved unchanged in
+  behaviour as the development and CI environment.
+- BIND9 reconfigured for the split topology: authoritative for
+  `cologne.local` against the physical lab IPs (`192.168.113.30`
+  for DMZ services, `10.10.10.10`/`10.10.10.20` for LAN services)
+  and recursive forwarder to OPNsense's Unbound, the single DNS
+  egress of the lab.
+- BIND9 now runs with `dnssec-validation no` (Unbound on OPNsense
+  is the validating resolver) and its trusted ACL includes the
+  compose-internal Docker network so the Nginx container can query.
+- Nginx upstream still resolves `api.cologne.local:8000` by FQDN;
+  the underlying IP moved to `10.10.10.20` (vm-app on LAN) with no
+  change to the configuration, demonstrating the DNS decoupling.
+- `Makefile` and `.github/workflows/ci.yml` updated to the
+  `infra/dev-local/` path; CI behaviour is unchanged.
+- `.gitignore` rule broadened to `infra/**/certs/out/` so both
+  dev-local and vm-web keep their keys untracked.
+
+### Security
+
+- Per-host UFW hardened on all three VMs with service-specific
+  inbound allows: DNS from DMZ/LAN on vm-web, API port from the
+  proxy IP only on vm-app, database ports from the app IP only on
+  vm-db. SSH restricted to the LAN subnet, root login disabled,
+  `MaxAuthTries 3`.
+- `fail2ban` watching SSH and `auditd` recording identity, sudo,
+  SSH and firewall events on every VM (blue-team baseline).
+- OPNsense perimeter with default-deny on WAN and DMZ: the only
+  externally reachable surface is 443/tcp (DNATed to Nginx). DMZ →
+  LAN is limited to the API port; the data tier is unreachable from
+  DMZ. L3/L4 state-table limits complement the Phase 5 L7 rate
+  limiting. Verified by the `nmap` scans in `infra/opnsense/NMAP.md`.
+
 ## [0.10.0] - 2026-04-27
 
 ### Added

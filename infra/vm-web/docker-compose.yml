@@ -1,0 +1,71 @@
+# vm-web — DMZ host stack.
+#
+# Two services that together form the public surface of the lab:
+#   - bind9: authoritative for cologne.local, recursive forwarder to
+#            OPNsense's Unbound. Exposes 53/tcp and 53/udp on the host
+#            so DMZ and LAN clients can resolve through it.
+#   - nginx: TLS terminator and reverse proxy to the API on vm-app.
+#            Uses bind9 (this same compose) as its DNS resolver so the
+#            api.cologne.local upstream resolves correctly.
+#
+# Compose-internal network 172.30.0.0/24 is unrelated to the host's
+# DMZ network — it's only used so bind9 has a stable IP that nginx
+# can reference in its `dns:` directive. Host-side traffic still
+# arrives on the vm-web DMZ address (192.168.113.30) and outbound
+# traffic from the containers leaves through that same address by
+# normal Docker NAT.
+
+name: cologne-datahub-web
+
+networks:
+  web_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          gateway: 172.30.0.1
+
+services:
+  bind9:
+    image: ubuntu/bind9:latest
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    volumes:
+      - ./bind9/named.conf:/etc/bind/named.conf:ro
+      - ./bind9/zones:/etc/bind/zones:ro
+    networks:
+      web_net:
+        ipv4_address: 172.30.0.5
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep named || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      bind9:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./certs/out:/etc/nginx/certs:ro
+    networks:
+      web_net:
+        ipv4_address: 172.30.0.10
+    dns:
+      - 172.30.0.5
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 80"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s

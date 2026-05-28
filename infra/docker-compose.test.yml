@@ -1,6 +1,6 @@
 # Ephemeral databases for integration tests.
 # Uses different ports and a dedicated project name so it never collides
-# with the main stack (infra/docker-compose.yml).
+# with the main stack (infra/dev-local/docker-compose.yml).
 #
 # Usage:
 #   docker compose -f infra/docker-compose.test.yml up -d --wait

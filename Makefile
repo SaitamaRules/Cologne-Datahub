@@ -3,7 +3,7 @@
 .DEFAULT_GOAL := help
 
 APP_DIR      := app
-COMPOSE      := docker compose -f infra/docker-compose.yml --env-file .env
+COMPOSE      := docker compose -f infra/dev-local/docker-compose.yml --env-file .env
 COMPOSE_TEST := docker compose -f infra/docker-compose.test.yml
 
 help:  ## Show this help
@@ -36,22 +36,22 @@ test: test-up  ## Full test cycle: start ephemeral DBs, run suite, tear down
 	$(MAKE) test-down; \
 	exit $$code
 
-build:  ## Build the app image
+build:  ## Build the app image (dev-local stack)
 	$(COMPOSE) build
 
-up:  ## Start the full stack (app + postgres + mongo) in the background
+up:  ## Start the dev-local stack (app + postgres + mongo) in the background
 	$(COMPOSE) up -d
 
-down:  ## Stop the stack (volumes preserved)
+down:  ## Stop the dev-local stack (volumes preserved)
 	$(COMPOSE) down
 
-restart:  ## Restart the stack
+restart:  ## Restart the dev-local stack
 	$(COMPOSE) restart
 
-logs:  ## Tail all stack logs
+logs:  ## Tail all dev-local stack logs
 	$(COMPOSE) logs -f --tail=100
 
-ps:  ## Show container status
+ps:  ## Show container status (dev-local stack)
 	$(COMPOSE) ps
 
 fetch-data:  ## Fetch the 500-feature sample GeoJSON from Cologne WFS into app/data/
@@ -71,5 +71,5 @@ backup:  ## Run backup routine [Phase 8+]
 restore:  ## Run restore routine [Phase 8+]
 	@echo "Not implemented yet (Phase 8)."
 
-clean:  ## Stop stack and REMOVE all volumes (destructive)
+clean:  ## Stop dev-local stack and REMOVE all volumes (destructive)
 	$(COMPOSE) down -v

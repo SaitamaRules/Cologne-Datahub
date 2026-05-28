@@ -166,13 +166,13 @@ LAN/DMZ addresses) and the rest of the project follows automatically.
 
 ## Links
 
-- `infra/bind9/named.conf` — BIND9 configuration.
-- `infra/bind9/zones/db.cologne.local` — forward zone.
-- `infra/bind9/zones/db.172.28` — reverse zone.
-- `infra/bind9/README.md` — service map and operational notes.
-- `infra/docker-compose.yml` — fixed subnet, pinned IPs, `dns:`
+- `infra/dev-local/bind9/named.conf` — BIND9 configuration.
+- `infra/dev-local/bind9/zones/db.cologne.local` — forward zone.
+- `infra/dev-local/bind9/zones/db.172.28` — reverse zone.
+- `infra/dev-local/bind9/README.md` — service map and operational notes.
+- `infra/dev-local/docker-compose.yml` — fixed subnet, pinned IPs, `dns:`
   directives on every service.
-- `infra/nginx/nginx.conf` — upstream now uses
+- `infra/dev-local/nginx/nginx.conf` — upstream now uses
   `api.cologne.local`.
 - `.github/workflows/ci.yml` — e2e step that asserts DNS
   resolution from inside the network.
