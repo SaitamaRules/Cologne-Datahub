@@ -12,7 +12,7 @@ It takes the REST API I built at the ZfL (University of Cologne) — serving pub
 
 ## Status
 
-**8 of 10 phases completed.** The latest release adds the OPNsense perimeter: the stack now runs across three VMs split into DMZ and LAN behind a firewall, on top of the internal DNS, TLS and L7 rate limiting from previous phases. Remaining phases tackle automated backups, monitoring and the final report.
+**Complete.** All ten phases are delivered. The system runs across three VMs split into DMZ and LAN behind an OPNsense firewall, with internal DNS, TLS, L7 rate limiting and CI, automated database backups (Phase 8) and a standard-library service monitor with Telegram alerts (Phase 9). It is an academic-professional project, finished and tagged. The oral defence is a live presentation of this work and is external to the repository.
 
 Full breakdown in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -48,6 +48,8 @@ To stop: `docker compose -f infra/dev-local/docker-compose.yml --env-file .env d
 
 Seeding real data from the Cologne WFS, running tests against ephemeral databases, and trusting the CA system-wide are documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`infra/dev-local/certs/README.md`](infra/dev-local/certs/README.md).
 
+Deploying the segmented three-VM lab from scratch (OPNsense perimeter + DMZ/LAN) is documented per host under [`infra/`](infra/): [vm-web](infra/vm-web/README.md) (Nginx + BIND9), [vm-app](infra/vm-app/README.md) (Deno API), [vm-db](infra/vm-db/README.md) (databases, backups, monitor), with the firewall posture in [`infra/opnsense/`](infra/opnsense/README.md).
+
 ## Documentation map
 
 - **[API reference](docs/API.md)** — every endpoint, authentication, error format.
@@ -56,7 +58,7 @@ Seeding real data from the Cologne WFS, running tests against ephemeral database
 - **[Bibliography](docs/BIBLIOGRAPHY.md)** — data sources, tooling, standards.
 - **[Changelog](CHANGELOG.md)** — versioned history of every change.
 - **[Architecture Decision Records](docs-tfc/adr/)** — why each major choice was made.
-- **Subsystem docs:** [Nginx](infra/dev-local/nginx/README.md) · [Rate limits](infra/dev-local/nginx/RATE_LIMITS.md) · [Internal CA](infra/dev-local/certs/README.md) · [BIND9](infra/dev-local/bind9/README.md)
+- **Subsystem docs:** [Nginx](infra/dev-local/nginx/README.md) · [Rate limits](infra/dev-local/nginx/RATE_LIMITS.md) · [Internal CA](infra/dev-local/certs/README.md) · [BIND9](infra/dev-local/bind9/README.md) · [Firewall posture](infra/opnsense/RULES.md) · [Backups & monitoring](infra/vm-db/README.md)
 
 ## Continuous Integration
 

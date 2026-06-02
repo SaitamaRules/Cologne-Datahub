@@ -14,7 +14,7 @@ The TFC is organised in 10 phases. Each closed phase is marked with an annotated
 | 7     | OPNsense perimeter (DMZ + LAN)      | `v0.11.0` | ✅ Done        |
 | 8     | Automated backups                   | `v0.12.0` | ✅ Done        |
 | 9     | Monitoring (Python stdlib)          | `v0.13.0` | ✅ Done        |
-| 10    | Memoria and defence                 | —         | ⏳ Pending     |
+| 10    | Defence                             | `v1.0.0`  | ✅ Done        |
 
 ## Completed phases
 
@@ -68,6 +68,6 @@ A standard-library-only Python monitor runs as a container on `vm-db`. Every 30 
 
 ## Upcoming phases
 
-### Phase 10 — Memoria and defence
+### Phase 10 — Defence
 
-Written report (memoria TFC), network topology and sequence diagrams, operational runbook (fresh deployment, restore procedure, certificate rotation, alert response), slide deck and anticipated questions script for the oral defence.
+The project is complete and tagged `v1.0.0`. All engineering and documentation are finished: the codebase, the segmented three-VM deployment, the automated backups and the service monitor, plus the full decision record (ADRs 0001–0011), this roadmap and the changelog. The written report (memoria) and project plan live in the project's Notion space (linked from the README), with this repository as the technical evidence behind them; operational procedures are documented in the per-host READMEs under `infra/` and in the ADRs. The oral defence is a live presentation of this finished work and is external to the repository.

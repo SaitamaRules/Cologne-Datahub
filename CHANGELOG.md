@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-02
+
+The project is complete. This release marks the finished state of the
+TFC: all phases delivered and documentation finalised. The system is an
+academic-professional deliverable; the oral defence is a live
+presentation external to the repository.
+
+### Changed
+
+- Documentation finalised for the completed project: `README.md` status
+  and from-scratch deployment pointers; `docs/ARCHITECTURE.md`
+  observability and repository-layout sections (service monitor built,
+  backups documented, ADRs 0001–0011); `infra/vm-db/README.md` backup
+  and monitor operations; `docs/ROADMAP.md` with all ten phases marked
+  complete.
+
 ## [0.13.0] - 2026-05-28
 
 ### Added

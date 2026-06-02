@@ -41,7 +41,9 @@ docker compose -f infra/vm-db/docker-compose.yml --env-file .env up -d
 docker compose -f infra/vm-db/docker-compose.yml --env-file .env ps
 ```
 
-Both services should report `healthy` within ~20 seconds.
+PostgreSQL and MongoDB should report `healthy` within ~20 seconds. The
+`backup`, `ofelia` and `monitor` containers (Phases 8–9) have no
+healthcheck and simply run in the background.
 
 The first run also applies `app/queries/schema.sql` to PostgreSQL
 through the `docker-entrypoint-initdb.d/` mount. Subsequent runs skip
@@ -79,9 +81,61 @@ docker compose -f infra/vm-db/docker-compose.yml --env-file .env config | Out-Nu
 
 Exit 0 = compose parses cleanly.
 
-## Future (Phase 8)
+## Backups (Phase 8)
 
-This host is also where the backup routine runs: `pg_dump` and
-`mongodump` against the local containers, tarballed and rotated under
-a directory managed by a dedicated backup container or systemd timer.
-Restore from a captured snapshot is documented at the same time.
+A dedicated `backup` container holds the dump tooling
+(`pg_dump`/`pg_restore`, `mongodump`/`mongorestore`, `curl`) and idles;
+an Ofelia sidecar triggers `backup.sh` daily at 03:00 from a schedule
+declared in compose labels.
+
+`backup.sh` writes a single timestamped `tar.gz` under
+`infra/vm-db/backups/` (gitignored) containing a PostgreSQL
+custom-format dump, a gzipped MongoDB archive, and — when the OPNsense
+API credentials are set — the firewall's running configuration.
+Retention is 7 daily + 4 weekly (the weekly copy promoted on Sundays).
+
+Run a backup on demand:
+
+```bash
+docker compose -f infra/vm-db/docker-compose.yml --env-file .env \
+  exec backup backup.sh
+```
+
+Restore a chosen archive (destructive — drops and recreates objects):
+
+```bash
+docker compose -f infra/vm-db/docker-compose.yml --env-file .env \
+  exec backup restore.sh /backups/daily/cologne-datahub_<TS>.tar.gz
+```
+
+The OPNsense pull is optional: leave `OPNSENSE_API_KEY` /
+`OPNSENSE_API_SECRET` blank in `.env` to skip it. When used, the key
+should be a read-only account limited to the "Configuration History"
+privilege. Rationale in
+[ADR-0010](../../docs-tfc/adr/0010-automated-backups.md).
+
+## Monitoring (Phase 9)
+
+A standard-library-only Python `monitor` container TCP-probes the lab's
+services every 30 seconds — PostgreSQL and MongoDB locally (by service
+name), and the API, Nginx and BIND9 across the segments by lab IP — and
+alerts only on up↔down transitions. Alerts go to Telegram via `urllib`
+when `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` are set in `.env`,
+otherwise to the log.
+
+Follow it:
+
+```bash
+docker compose -f infra/vm-db/docker-compose.yml --env-file .env \
+  logs -f monitor
+```
+
+Reaching the API port from this host requires one least-privilege UFW
+allow on vm-app (the monitor's traffic egresses as this host's IP):
+
+```bash
+sudo ufw allow from 10.10.10.10 to any port 8000 proto tcp \
+  comment 'monitor on vm-db'
+```
+
+Rationale in [ADR-0011](../../docs-tfc/adr/0011-service-monitoring.md).

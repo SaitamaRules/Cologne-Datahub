@@ -78,12 +78,12 @@ Cologne-Datahub/
 ├── docs/                   # User-facing documentation
 ├── docs-tfc/
 │   ├── DIARY.md            # Erasmus+ journal
-│   └── adr/                # Architecture Decision Records (0001–0009)
+│   └── adr/                # Architecture Decision Records (0001–0011)
 ├── infra/
 │   ├── dev-local/          # single-host stack (compose + bind9 + nginx + certs)
 │   ├── vm-web/             # DMZ host: bind9 + nginx + certs + compose
 │   ├── vm-app/             # LAN host: Deno API compose
-│   ├── vm-db/              # LAN host: Postgres + Mongo compose
+│   ├── vm-db/              # LAN host: Postgres + Mongo + backups + monitor
 │   ├── opnsense/           # firewall posture: RULES.md + NMAP.md
 │   └── docker-compose.test.yml
 ├── .github/workflows/ci.yml
@@ -137,6 +137,9 @@ The suite uses three deterministic fixture trees: a linden in Lindenthal, a monu
 
 - **Structured JSON logs** in both Nginx and the application, correlated via `X-Request-ID`.
 - **Health endpoints** at two levels: `/nginx-health` (edge), `/health` and `/health/ready` (application).
-- **Docker healthchecks** on all four services. Readiness gating between services uses `depends_on: { condition: service_healthy }`.
+- **Docker healthchecks** on the core services. Readiness gating between services uses `depends_on: { condition: service_healthy }`.
+- **Service monitor (Phase 9).** A standard-library-only Python container on vm-db TCP-probes the lab's services (PostgreSQL and MongoDB locally, plus the API, Nginx and BIND9 across the segments) every 30 seconds and sends a Telegram alert only on an up↔down transition, with a log-only fallback. See [ADR-0011](../docs-tfc/adr/0011-service-monitoring.md).
 
-A Python stdlib-only monitoring daemon is planned for Phase 9.
+## Backups
+
+The data tier on vm-db is backed up daily by a dedicated container: `pg_dump` (custom format) and `mongodump` (gzipped archive), plus a best-effort pull of the OPNsense configuration, bundled into a single timestamped `tar.gz` and rotated 7 daily / 4 weekly. Scheduling is handled by an Ofelia sidecar that reads the schedule from compose labels, so the cadence is versioned with the rest of the deployment. `restore.sh` is the symmetric manual counterpart. See [ADR-0010](../docs-tfc/adr/0010-automated-backups.md) and [`infra/vm-db/README.md`](../infra/vm-db/README.md).
