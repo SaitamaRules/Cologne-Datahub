@@ -13,7 +13,7 @@ The TFC is organised in 10 phases. Each closed phase is marked with an annotated
 | 6     | Internal DNS (BIND9)                | `v0.10.0` | ✅ Done        |
 | 7     | OPNsense perimeter (DMZ + LAN)      | `v0.11.0` | ✅ Done        |
 | 8     | Automated backups                   | `v0.12.0` | ✅ Done        |
-| 9     | Monitoring (Python stdlib)          | —         | ⏳ Pending     |
+| 9     | Monitoring (Python stdlib)          | `v0.13.0` | ✅ Done        |
 | 10    | Memoria and defence                 | —         | ⏳ Pending     |
 
 ## Completed phases
@@ -62,11 +62,11 @@ Firewall policy is default-deny on WAN and DMZ: the only externally reachable su
 
 Both databases on `vm-db` are backed up by a dedicated `backup` helper container (PostgreSQL 16 client + MongoDB Database Tools + curl) under `infra/vm-db/backup/`. `backup.sh` runs `pg_dump` (custom format) and `mongodump` (gzipped archive) and additionally pulls the OPNsense running configuration through its REST API — treating the firewall config as data, as promised in Phase 7 — bundling all three into one timestamped `tar.gz`. Retention is 7 daily plus 4 weekly, the weekly copy promoted on Sundays. Scheduling is handled by an Ofelia sidecar (`mcuadros/ofelia`) that reads the daily 03:00 schedule from container labels, so the cadence is versioned in the compose file rather than in an out-of-band host crontab. `restore.sh` is the symmetric, manual counterpart (`pg_restore --clean`, `mongorestore --drop`); the rehearsed restore procedure is captured in the Phase 10 runbook. Backups are stored locally on the host; off-host replication (3-2-1) and at-rest encryption were deliberately left out of scope for this phase. ADR-0010 documents the choice of an Ofelia sidecar over host cron, pgBackRest and a managed off-host service.
 
+### Phase 9 — Service monitor
+
+A standard-library-only Python monitor runs as a container on `vm-db`. Every 30 seconds it opens a TCP connection to each watched service — PostgreSQL and MongoDB locally (by Docker service name) and the API (`vm-app`), Nginx and BIND9 (`vm-web`) across the segments by lab IP — treating a successful connect as "up" and a refused connection or timeout as "down". State is held in memory and an alert fires only on an up↔down transition, so a persistently down service is not re-announced. Alerts are delivered to Telegram through `urllib` (no third-party client), with a log-only fallback when the bot credentials are unset. The image is `python:3.12-slim` with no `pip` installs. The monitor publishes no ports and holds no Docker socket; reaching the API port required a single least-privilege UFW allow on `vm-app` for the monitoring host. ADR-0011 documents the choice of a standard-library monitor over a Prometheus/Grafana stack, Uptime Kuma and a hosted uptime service.
+
 ## Upcoming phases
-
-### Phase 9 — Monitoring daemon
-
-A small Python daemon written against the standard library only — no external dependencies. It queries `/var/run/docker.sock` via `http.client` to enumerate containers, pings TCP ports with `socket`, holds state in memory to emit alerts only on `up ↔ down` transitions, and sends those alerts via Telegram using `urllib.request`. Runs as a containerised service in the LAN segment. A dedicated ADR will document why the standard library suffices over a Prometheus/Grafana stack for this scale.
 
 ### Phase 10 — Memoria and defence
 

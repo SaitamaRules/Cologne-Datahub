@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-05-28
+
+### Added
+
+- Service availability monitor on `vm-db`: a standard-library-only
+  Python container (`infra/vm-db/monitor/`) that TCP-probes the lab's
+  services every 30 seconds and alerts only on up↔down transitions.
+- `monitor.py` checks PostgreSQL and MongoDB locally (by Docker
+  service name) and the API (`vm-app`), Nginx and BIND9 (`vm-web`)
+  across the segments by lab IP. State is held in memory, so a service
+  that stays down is announced once rather than every cycle.
+- Telegram alerting through `urllib` (no third-party client), with a
+  log-only fallback when `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` are
+  unset. Image is `python:3.12-slim` with no `pip` installs.
+- ADR-0011 documenting the choice of a standard-library monitor over a
+  Prometheus/Grafana stack, Uptime Kuma and a hosted uptime service.
+
+### Changed
+
+- `infra/vm-db/docker-compose.yml` extended with the `monitor`
+  service; existing services are unchanged.
+- `.env.example` documents the optional `TELEGRAM_BOT_TOKEN` /
+  `TELEGRAM_CHAT_ID` variables.
+
+### Security
+
+- The monitor publishes no ports and mounts no Docker socket — it is a
+  pure outbound TCP client. Reaching the API required a single
+  least-privilege UFW allow on `vm-app` (`10.10.10.10 → 8000/tcp`),
+  mirroring the existing proxy-only rule rather than widening it.
+
 ## [0.12.0] - 2026-05-28
 
 ### Added
