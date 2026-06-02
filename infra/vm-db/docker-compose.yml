@@ -11,6 +11,9 @@
 # Backups (Phase 8) run on this host: a `backup` helper container holds
 # the dump tooling and Ofelia triggers it on a daily schedule. Archives
 # land in ./backups (gitignored).
+#
+# Monitoring (Phase 9): a stdlib-only `monitor` container TCP-probes the
+# lab's services and alerts on up/down transitions via Telegram.
 
 name: cologne-datahub-db
 
@@ -94,6 +97,23 @@ services:
       TZ: Europe/Berlin   # switch to Europe/Madrid after returning to Spain
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  # --- Phase 9: service monitor ---------------------------------------------
+  # Stdlib-only TCP availability monitor. Reaches the local databases by
+  # service name and the remote services (api/nginx/bind9) by lab IP.
+  # Telegram credentials come from .env; alerts fall back to the log if unset.
+  monitor:
+    build: ./monitor
+    image: cologne-datahub-monitor:1.0
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      CHECK_INTERVAL: "30"
+      TCP_TIMEOUT: "5"
+      STARTUP_DELAY: "15"
+      TZ: Europe/Berlin   # switch to Europe/Madrid after returning to Spain
+    dns:
+      - 192.168.113.30
 
 volumes:
   pg_data:
